@@ -216,5 +216,5 @@ pip-log.txt
 
 
 
-.bat
-.js
+*.bat
+*.js
