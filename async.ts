@@ -107,15 +107,15 @@ module async {
     export function seq<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X    ,Return>(a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>                          , last: Async<Return>): Async<Return>;
     export function seq<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y  ,Return>(a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>, y: Async<Y>             , last: Async<Return>): Async<Return>;
     export function seq<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,Return>(a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>, y: Async<Y>, z: Async<Z>, last: Async<Return>): Async<Return>;
-    export function seq(...actions: Async<any>[]): Async<any> {
+    export function seq(...xs: Async<any>[]): Async<any> {
         return function(success: (r: any)=>void, fail: ()=>void){
-            var acs: Async<any>[] = actions.slice(0);
-            var seqResult: any = null;
+            var _xs: Async<any>[] = xs.slice(0);
+            var r: any = null;
             function run(){
-                if(acs.length == 0){
-                    success(seqResult);
+                if(_xs.length == 0){
+                    success(r);
                 }else{
-                    acs[0](function(result){ seqResult = result; acs.shift(); run(); }, fail);
+                    _xs[0](function(_r){ r = _r; _xs.shift(); run(); }, fail);
                 }
             }
             run();        
@@ -153,6 +153,13 @@ module async {
         seq.apply(undefined, actions)(function(){}, function(){ throw new Error(); });
     }
 
+    // Utils //
+
+    // (>>)
+    export function next<S,T>(a: Async<S>, b: Async<T>): Async<T> {
+        return bind(a, ()=>b);
+    }    
+
     // inject and eject //
 
     export function inject<T>(f: ()=>T): Async<T> {
@@ -182,9 +189,7 @@ module async {
 
     // control flow ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    export function nop(): Async<void> {
-        return pure(undefined);
-    }
+    export var nop: Async<void> = pure(undefined);
 
     export function series<T>(actions: Async<T>[]): Async<T> {
         return seq.apply(undefined, actions);
@@ -427,6 +432,8 @@ module async {
 
     export function foldl<S,T>(f: Async<(s: S, t: T)=>S>, x: Async<S>, xs: Async<T[]>): Async<S> {
         function _foldl<S,T>(f: (s: S, t: T)=>S, s: S, array: T[]): S {
+            console.log("foldl");
+            throw new Error();
             for(var i = 0; i < array.length; i++){
                 s = f(s, array[i]);
             }
