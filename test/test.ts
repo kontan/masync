@@ -10,16 +10,12 @@
 var hoge = async.get("hoge.txt");
 var piyo = async.get("piyo.txt");
 async.run(
-    //async.foldl(async.pure((x,y)=>x), async.pure(0), async.pure([1,2,3]))
-
-    //async.next(async.log("a"), async.log("b"),)
-
-    async.log("a"), 
-    async.log(hoge),
-    async.log("b")
-
-    //async.log(async.toString(async.lift(Math.abs)(async.pure(-20))))
-    //async.eject(hoge, function(data){ console.log(data); })
+    async.log(async.strcat(hoge, piyo))
 );
 
 
+async.run(
+    async.log("hoge"),    // "hoge" と出力
+    async.wait(1000),     // 1秒待機
+    async.log("piyo")     // "piyo" と出力
+);
