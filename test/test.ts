@@ -6,7 +6,7 @@
 //async.run(main);
 
 
-var kyon = async.get("hoge.txt");
-var pong = async.get("piyo.txt");
-var main = async.log(async.sooner(kyon, pong));
+var hoge = async.cache(async.get("hoge.txt", false));
+var nyan = async.get(hoge);
+var main = async.log(async.concat(hoge, nyan));
 async.run(main);

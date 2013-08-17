@@ -343,28 +343,27 @@ module async {
 
     // ajax /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    export function get(url: Async<string>): Async<string>;
-    export function get(url: string       ): Async<string>;
-    export function get(url: any          ): Async<string> {
+    export function get(url: Async<string>, chached?: boolean): Async<string>;
+    export function get(url: string       , chached?: boolean): Async<string>;
+    export function get(url: any          , chached: boolean = true): Async<string> {
         url = typeof(url) === "string" ? pure(url) : url;
         return function(success: (text: string)=>void, fail: ()=>void){
-            var data: string = null;
-            if(data === null){
-                url(function(result: string){
-                    var xhr = new XMLHttpRequest();
-                    xhr.onload = function(){
-                        data = xhr.responseText;
-                        success(data);
-                    };
-                    xhr.onerror = function(){
-                        fail();
-                    };
-                    xhr.open("GET", result);
-                    xhr.send();
-                }, fail);
-            }else{
-                success(data);
-            }
+            url(function(result: string){
+                var xhr = new XMLHttpRequest();
+                xhr.onload = function(){
+                    success(xhr.responseText);
+                };
+                xhr.onerror = function(){
+                    fail();
+                };
+                xhr.open("GET", result);
+                if( ! chached){
+                    xhr.setRequestHeader('Pragma', 'no-cache');
+                    xhr.setRequestHeader('Cache-Control', 'no-cache');
+                    xhr.setRequestHeader('If-Modified-Since', 'Thu, 01 Jun 1970 00:00:00 GMT');                
+                }
+                xhr.send();
+            }, fail);
         }
     }
 
