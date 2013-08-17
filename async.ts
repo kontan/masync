@@ -177,6 +177,35 @@ module async {
 
     // control flow ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    export function nop(): Async<void> {
+        return pure(undefined);
+    }
+
+    export function cache<T>(action: Async<T>): Async<T> {
+        var value: T = undefined;
+        var succeed: boolean = undefined;
+        var listener: { success: (t: T)=>void; fail: ()=>void; }[] = [];
+        return function(success: (result: T)=>void, fail: ()=>void){
+            if(typeof succeed === "undefined"){
+                if(listener.length == 0){
+                    action(function(v: T){ 
+                        value = v;
+                        succeed = true;
+                        listener.forEach(listener=>listener.success(v));
+                    }, function(){ 
+                        succeed = false;
+                        listener.forEach(listener=>listener.fail());
+                    });
+                }
+                listener.push({ success: success, fail: fail });                
+            }else if(succeed){
+                success(value);
+            }else{
+                fail();
+            }
+        };
+    }    
+
     export function sooner<T>(...actions: Async<T>[]): Async<T> {
         return function(success: (result: T)=>void, fail: ()=>void){
             var active: boolean = true;
@@ -218,6 +247,8 @@ module async {
             }, fail);
         };
     }
+
+
 
     // array operations //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
