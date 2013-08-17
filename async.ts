@@ -5,36 +5,32 @@ module async {
 
     // Functor //
     export function fmap<S,T>(f: (t: T)=>S, x: Async<T>): Async<S> {
-        return function(success: (result: S)=>void, fail: ()=>void){
-            x(function(result: T){ success(f(result)); }, fail);
-        };
+        return ap(pure(f), x);
     }
 
     // Applicative //
     export function pure<T>(t: T): Async<T> {
-        return function(success: (r: T)=>void, fail: ()=>void){ success(t); };
+        return (success: (r: T)=>void, fail: ()=>void)=>success(t);
     }
 
-    export function inject<T>(f: ()=>T): Async<T> {
-        return function(success: (t: T)=>void, fail: ()=>void){ success(f()); };
-    }
-
-    export function apply<S,T>(f: Async<(t: T)=>S>, x: Async<T>): Async<S> {
+    export function ap<S,T>(f: Async<(t: T)=>S>, x: Async<T>): Async<S> {
         return function(success: (result: S)=>void, fail: ()=>void){
-            f((g: (t: T)=>S)=>{ 
-                x((result: T)=>{ success(g(result)); }, fail);
-            }, fail)
+            var _f: (t: T)=>S;
+            var _x: T;
+            function fin(){
+                if(typeof _f !== "undefined" && typeof _x !== "undefined"){
+                    success(_f(_x));
+                }
+            }
+            f((g: (t: T)=>S)=>{ _f = g; fin(); }, fail);
+            x((r: T        )=>{ _x = r; fin(); }, fail);
         };
     }
 
     // Monad //
     export function bind<T,S>(x: Async<T>, f: (t: T)=>Async<S>): Async<S> {
         return (success: (s: S)=>void, fail: ()=>void)=>{ 
-            x((t: T)=>{ 
-                f(t)((s: S)=>{
-                    success(s);
-                }, fail);
-            }, fail); 
+            x((t: T)=>f(t)(success, fail), fail); 
         };
     }
 
@@ -155,6 +151,12 @@ module async {
     export function run<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z>(a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>, y: Async<Y>, z: Async<Z>): void;
     export function run(...actions: Async<any>[]): void {
         seq.apply(undefined, actions)(function(){}, function(){ throw new Error(); });
+    }
+
+    // inject and eject //
+
+    export function inject<T>(f: ()=>T): Async<T> {
+        return function(success: (t: T)=>void, fail: ()=>void){ success(f()); };
     }
 
     export function eject<T>(x: Async<T>, f: (t: T)=>void): Async<void> {
@@ -326,9 +328,7 @@ module async {
     export function log(message: string       ): Async<void> ;
     export function log(message: any          ): Async<void> {
         message = typeof(message) == "string" ? pure(message) : message;
-        return function(success: ()=>void, fail: ()=>void){
-            message(function(result: string){ console.log(result); success(); }, fail);
-        };
+        return fmap(console.log.bind(console), message);
     }
 
     // (==)

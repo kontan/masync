@@ -8,12 +8,11 @@
 
 
 var hoge = async.get("hoge.txt");
-//var nyan = async.get(hoge);
-//var main = async.log(async.strcat(hoge, nyan));
+var piyo = async.get("piyo.txt");
 async.run(
-    //main,
-    //async.setInterval(async.log(hoge), 1000),
-    async.eject(hoge, function(data){ console.log(data); })
+    async.log(hoge),
+    async.log(async.toString(async.lift(Math.abs)(async.pure(-20))))
+    //async.eject(hoge, function(data){ console.log(data); })
 );
 
 
