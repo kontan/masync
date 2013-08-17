@@ -126,10 +126,6 @@ module async {
         };
     }
 
-    export function series<T>(...actions: Async<T>[]): Async<T> {
-        return seq.apply(undefined, actions);
-    }
-
     // run actions
     export function run<A                                                  >(a: Async<A>                                                                                                                                                                                                                                                                                                                                     ): void;
     export function run<A,B                                                >(a: Async<A>, b: Async<B>                                                                                                                                                                                                                                                                                                                        ): void;
@@ -161,7 +157,14 @@ module async {
         seq.apply(undefined, actions)(function(){}, function(){ throw new Error(); });
     }
 
-    // error processing ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    export function eject<T>(x: Async<T>, f: (t: T)=>void): Async<void> {
+        return function(success: ()=>void, fail: ()=>void){
+            x(function(result: T){ f(result); success(); }, fail);
+        };   
+    }
+
+
+    // error handling ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     export function fail(): Async<void> {
         return function(success: ()=>void, fail: ()=>void){
@@ -179,6 +182,10 @@ module async {
 
     export function nop(): Async<void> {
         return pure(undefined);
+    }
+
+    export function series<T>(actions: Async<T>[]): Async<T> {
+        return seq.apply(undefined, actions);
     }
 
     export function cache<T>(action: Async<T>): Async<T> {
@@ -248,9 +255,126 @@ module async {
         };
     }
 
+    export function wait(milliseconds: Async<number>): Async<void>;
+    export function wait(milliseconds: number       ): Async<void>;
+    export function wait(milliseconds: any          ): Async<void> {
+        milliseconds = typeof(milliseconds) === "number" ? pure(milliseconds) : milliseconds;
+        return function(success: ()=>void, fail: ()=>void){
+            milliseconds(function(result: number){
+                window.setTimeout(function(){ success(); }, result);
+            }, fail);
+        }
+    }
 
+    export function setTimeout(a: Async<any>, milliseconds: Async<number>): Async<number>;
+    export function setTimeout(a: Async<any>, milliseconds: number       ): Async<number>;
+    export function setTimeout(a: Async<any>, milliseconds: any          ): Async<number> {
+        milliseconds = typeof(milliseconds) === "number" ? pure(milliseconds) : milliseconds;
+        return function(success: (t: number)=>void, fail: ()=>void){
+            milliseconds(function(t: number){ success(window.setTimeout(function(){ run(a); }, t)); }, fail);
+        }
+    }
 
-    // array operations //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    export function clearTimeout(timerId: Async<number>): Async<void>;
+    export function clearTimeout(timerId: number       ): Async<void>;
+    export function clearTimeout(timerId: any          ): Async<void> {
+        timerId = typeof(timerId) === "number" ? pure(timerId) : timerId;
+        return function(success: ()=>void, fail: ()=>void){
+            timerId(function(t: number){ window.clearTimeout(t); success(); }, fail);
+        }
+    }
+
+    export function setInterval(a: Async<any>, milliseconds: Async<number>): Async<number>;
+    export function setInterval(a: Async<any>, milliseconds: number       ): Async<number>;
+    export function setInterval(a: Async<any>, milliseconds: any          ): Async<number> {
+        milliseconds = typeof(milliseconds) === "number" ? pure(milliseconds) : milliseconds;
+        return function(success: (t: number)=>void, fail: ()=>void){
+            milliseconds(function(t: number){ success(window.setInterval(function(){ run(a); }, t)); }, fail);
+        }
+    }
+
+    export function clearInterval(timerId: Async<number>): Async<void>;
+    export function clearInterval(timerId: number       ): Async<void>;
+    export function clearInterval(timerId: any          ): Async<void> {
+        timerId = typeof(timerId) === "number" ? pure(timerId) : timerId;
+        return function(success: ()=>void, fail: ()=>void){
+            timerId(function(t: number){ window.clearInterval(t); success(); }, fail);
+        }
+    }
+
+    export function requestAnimationFrame(a: Async<any>): Async<number> {
+        return function(success: (t: number)=>void, fail: ()=>void){
+            success(window.requestAnimationFrame(function(){ run(a); }));
+        }
+    }
+
+    export function cancelAnimationFrame(timerId: Async<number>): Async<void>;
+    export function cancelAnimationFrame(timerId: number       ): Async<void>;
+    export function cancelAnimationFrame(timerId: any          ): Async<void> {
+        timerId = typeof(timerId) === "number" ? pure(timerId) : timerId;
+        return function(success: ()=>void, fail: ()=>void){
+            timerId(function(t: number){ window.cancelAnimationFrame(t); success(); }, fail);
+        }
+    }
+
+    // lifted operators /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // generic //
+
+    // console.log
+    export function log(message: Async<string>): Async<void> ;
+    export function log(message: string       ): Async<void> ;
+    export function log(message: any          ): Async<void> {
+        message = typeof(message) == "string" ? pure(message) : message;
+        return function(success: ()=>void, fail: ()=>void){
+            message(function(result: string){ console.log(result); success(); }, fail);
+        };
+    }
+
+    // (==)
+    export function equals<T>(a: Async<T>, b: Async<T>): Async<boolean>{
+        return lift((xa: T, xb: T)=>xa==xb)(a, b);
+    }
+
+    export function notEquals<T>(a: Async<T>, b: Async<T>): Async<boolean>{
+        return lift((xa: T, xb: T)=>xa!=xb)(a, b);
+    }    
+
+    // boolean //
+
+    export function not(x: Async<boolean>): Async<boolean>{
+        return lift((y: boolean)=>!y)(x);
+    }
+
+    // number //
+
+    export function max(...xs: Async<number>[]): Async<number>{
+        return lift(ys=>Math.max.apply(undefined, ys))(array(xs));
+    }
+
+    export function min(...xs: Async<number>[]): Async<number>{
+        return lift(ys=>Math.min.apply(undefined, ys))(array(xs));
+    }
+
+    export function abs(x: Async<number>): Async<number>{
+        return lift(Math.abs)(x);
+    }    
+
+    // string //
+
+    export function toString(x: Async<any>): Async<string> {
+        return lift((x: any)=>x+"")(x);
+    }
+    
+    export function toUpperCase(s: Async<string>): Async<string>{
+        return lift((x: string)=>x.toUpperCase())(s);
+    }
+
+    export function strcat(...xs: Async<string>[]): Async<string> {
+        return lift((ys: string[])=>ys.join(""))(array(xs));
+    }    
+
+    // array //
 
     export function array<T>(actions: Async<T>[]): Async<T[]> {
         return function(success: (result: T[])=>void, fail: ()=>void){
@@ -268,78 +392,61 @@ module async {
         };
     }
 
-    export function map<S,T>(f: (t: T)=>S, action: Async<T[]>): Async<S[]> {
-        return function(success: (result: S[])=>void, fail: ()=>void){
-            action(function(result: T[]){ success(result.map(f)); }, fail);
-        };
+    export function length(xs: Async<any[]>): Async<number> {
+        return lift(xs=>xs.length)(xs);
     }
 
-    export function foldl<S,T>(f: (s: S, t: T)=>S, s: S, action: Async<T[]>): Async<S> {
-        return function(success: (result: S)=>void, fail: ()=>void){
-            action(function(result: T[]){ 
-                for(var i = 0; i < result.length; i++){
-                    s = f(s, result[i]);
-                }
-                success(s);
-            }, fail);
-        };
+    export function at<T>(i: Async<number>, xs: Async<T[]>): Async<T>;
+    export function at<T>(i: number       , xs: Async<T[]>): Async<T>;
+    export function at<T>(i: any          , xs: Async<T[]>): Async<T> {
+        i = typeof i === "number" ? pure(i) : i;
+        return lift((i,xs)=>xs[i])(i, xs);
     }
 
-    export function and(actions: Async<boolean[]>): Async<boolean> {
-        return function(success: (result: boolean)=>void, fail: ()=>void){
-            return foldl((a: boolean, b: boolean)=>a&&b, true, actions);
-        };
-    }
+    export function putAt<T>(i: Async<number>, x: Async<T>, xs: Async<T[]>): Async<void>;
+    export function putAt<T>(i: number       , x: Async<T>, xs: Async<T[]>): Async<void>;
+    export function putAt<T>(i: any          , x: Async<T>, xs: Async<T[]>): Async<void> {
+        i = typeof i === "number" ? pure(i) : i;
+        return lift((i,x,xs)=>{ xs[i] = x; })(i, x, xs);
+    }    
 
-    export function or(actions: Async<boolean[]>): Async<boolean> {
-        return function(success: (result: boolean)=>void, fail: ()=>void){
-            return foldl((a: boolean, b: boolean)=>a||b, false, actions);
-        };
-    }
-
-    // Generic operations //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    export function log(message: Async<string>): Async<void> ;
-    export function log(message: string       ): Async<void> ;
-    export function log(message: any          ): Async<void> {
-        message = typeof(message) == "string" ? pure(message) : message;
-        return function(success: ()=>void, fail: ()=>void){
-            message(function(result: string){ console.log(result); success(); }, fail);
-        };
-    }
-
-    export function wait(milliseconds: Async<number>): Async<void>;
-    export function wait(milliseconds: number       ): Async<void>;
-    export function wait(milliseconds: any          ): Async<void> {
-        milliseconds = typeof(milliseconds) === "number" ? pure(milliseconds) : milliseconds;
-        return function(success: ()=>void, fail: ()=>void){
-            milliseconds(function(result: number){
-                setTimeout(function(){ success(); }, result);
-            }, fail);
-        }
-    }
-
-    // lifted operators /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    export function equals<T>(a: Async<T>, b: Async<T>): Async<boolean>{
-        return lift((xa: T, xb: T)=>xa==xb)(a, b);
-    }
-
-    export function toUpperCase(s: Async<string>): Async<string>{
-        return lift((x: string)=>x.toUpperCase())(s);
-    }
-
-    export function concat(xs: Async<string>, ys: Async<string>): Async<string> {
-        return lift((x: string, y: string)=>x + y)(xs, ys);
+    export function concat<T>(...xs: Async<T[]>[]): Async<T[]> {
+        return lift((ys: T[])=>[].concat(ys))(array(xs));
     } 
 
     export function join(xs: Async<string[]>, separator: Async<string> = pure(",")): Async<string> {
         return lift((x: string[], s: string)=>x.join(s))(xs, separator);
     }
 
-    export function toString(x: Async<any>): Async<string> {
-        return lift((x: any)=>x+"")(x);
+    export function map<S,T>(f: Async<(t: T)=>S>, xs: Async<T[]>): Async<S[]> {
+        function _map(f: (t: T)=>S, xs: T[]): S[] {
+            return xs.map(f);
+        }
+        return lift(_map)(f, xs);
     }
+
+    export function foldl<S,T>(f: Async<(s: S, t: T)=>S>, x: Async<S>, xs: Async<T[]>): Async<S> {
+        function _foldl<S,T>(f: (s: S, t: T)=>S, s: S, array: T[]): S {
+            for(var i = 0; i < array.length; i++){
+                s = f(s, array[i]);
+            }
+            return s;
+        }
+        return lift(_foldl)(f, x, xs);
+    }
+
+    export function and(xs: Async<boolean[]>): Async<boolean> {
+        return function(success: (result: boolean)=>void, fail: ()=>void){
+            return foldl(pure((a: boolean, b: boolean)=>a&&b), pure(true), xs);
+        };
+    }
+
+    export function or(xs: Async<boolean[]>): Async<boolean> {
+        return function(success: (result: boolean)=>void, fail: ()=>void){
+            return foldl(pure((a: boolean, b: boolean)=>a||b), pure(false), xs);
+        };
+    }
+
 
     // ajax /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
