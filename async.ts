@@ -159,6 +159,25 @@ module async {
 
     // control flow ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    export function sooner<T>(...actions: Async<T>[]): Async<T> {
+        return function(success: (result: T)=>void, fail: ()=>void){
+            var active: boolean = true;
+            function _succ(result: T){
+                if(active){
+                    active = false;
+                    success(result);
+                }
+            }
+            function _fail(){
+                if(active){
+                    active = false;
+                    fail();
+                }
+            }
+            actions.forEach(action=>action(_succ, _fail));
+        };
+    }
+
     export function when<T>(action: Async<boolean>, ifthen: Async<T>, ifelse?: Async<T>): Async<T> {
         return function(success: (result: T)=>void, fail: ()=>void){
             action(function(result: boolean){
