@@ -114,6 +114,51 @@ module masync {
         };
     }
 
+    export function liftAsync<A,                                                  Return>(f: (a: A                                                                                                                                                      )=>Async<Return>): (a: Async<A>                                                                                                                                                                                                                                                                                                                                     )=>Async<Return>;
+    export function liftAsync<A,B,                                                Return>(f: (a: A, b: B                                                                                                                                                )=>Async<Return>): (a: Async<A>, b: Async<B>                                                                                                                                                                                                                                                                                                                        )=>Async<Return>;
+    export function liftAsync<A,B,C,                                              Return>(f: (a: A, b: B, c: C                                                                                                                                          )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>                                                                                                                                                                                                                                                                                                           )=>Async<Return>;
+    export function liftAsync<A,B,C,D,                                            Return>(f: (a: A, b: B, c: C, d: D                                                                                                                                    )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>                                                                                                                                                                                                                                                                                              )=>Async<Return>;    
+    export function liftAsync<A,B,C,D,E,                                          Return>(f: (a: A, b: B, c: C, d: D, e: E                                                                                                                              )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>                                                                                                                                                                                                                                                                                 )=>Async<Return>;
+    export function liftAsync<A,B,C,D,E,F,                                        Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F                                                                                                                        )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>                                                                                                                                                                                                                                                                    )=>Async<Return>;
+    export function liftAsync<A,B,C,D,E,F,G,                                      Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G                                                                                                                  )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>                                                                                                                                                                                                                                                       )=>Async<Return>;    
+    export function liftAsync<A,B,C,D,E,F,G,H,                                    Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H                                                                                                            )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>                                                                                                                                                                                                                                          )=>Async<Return>;
+    export function liftAsync<A,B,C,D,E,F,G,H,I,                                  Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I                                                                                                      )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>                                                                                                                                                                                                                             )=>Async<Return>;
+    export function liftAsync<A,B,C,D,E,F,G,H,I,J,                                Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J                                                                                                )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>                                                                                                                                                                                                                )=>Async<Return>;
+    export function liftAsync<A,B,C,D,E,F,G,H,I,J,K,                              Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K                                                                                          )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>                                                                                                                                                                                                   )=>Async<Return>;    
+    export function liftAsync<A,B,C,D,E,F,G,H,I,J,K,L,                            Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K, l: L                                                                                    )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>                                                                                                                                                                                      )=>Async<Return>;
+    export function liftAsync<A,B,C,D,E,F,G,H,I,J,K,L,M,                          Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K, l: L, m: M                                                                              )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>                                                                                                                                                                         )=>Async<Return>;
+    export function liftAsync<A,B,C,D,E,F,G,H,I,J,K,L,M,N,                        Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K, l: L, m: M, n: N                                                                        )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>                                                                                                                                                            )=>Async<Return>;
+    export function liftAsync<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,                      Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K, l: L, m: M, n: N, o: O                                                                  )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>                                                                                                                                               )=>Async<Return>;
+    export function liftAsync<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,                    Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K, l: L, m: M, n: N, o: O, p: P                                                            )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>                                                                                                                                  )=>Async<Return>;
+    export function liftAsync<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,                  Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K, l: L, m: M, n: N, o: O, p: P, q: Q                                                      )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>                                                                                                                     )=>Async<Return>;    
+    export function liftAsync<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,                Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K, l: L, m: M, n: N, o: O, p: P, q: Q, r: R                                                )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>                                                                                                        )=>Async<Return>;
+    export function liftAsync<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,              Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K, l: L, m: M, n: N, o: O, p: P, q: Q, r: R, s: S                                          )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>                                                                                           )=>Async<Return>;
+    export function liftAsync<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,            Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K, l: L, m: M, n: N, o: O, p: P, q: Q, r: R, s: S, t: T                                    )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>                                                                              )=>Async<Return>;
+    export function liftAsync<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,          Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K, l: L, m: M, n: N, o: O, p: P, q: Q, r: R, s: S, t: T, u: U                              )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>                                                                 )=>Async<Return>;
+    export function liftAsync<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,        Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K, l: L, m: M, n: N, o: O, p: P, q: Q, r: R, s: S, t: T, u: U, v: V                        )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>                                                    )=>Async<Return>;
+    export function liftAsync<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,      Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K, l: L, m: M, n: N, o: O, p: P, q: Q, r: R, s: S, t: T, u: U, v: V, w: W                  )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>                                       )=>Async<Return>;    
+    export function liftAsync<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,    Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K, l: L, m: M, n: N, o: O, p: P, q: Q, r: R, s: S, t: T, u: U, v: V, w: W, x: X            )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>                          )=>Async<Return>;
+    export function liftAsync<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,  Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K, l: L, m: M, n: N, o: O, p: P, q: Q, r: R, s: S, t: T, u: U, v: V, w: W, x: X, y: Y      )=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>, y: Async<Y>             )=>Async<Return>;
+    export function liftAsync<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K, l: L, m: M, n: N, o: O, p: P, q: Q, r: R, s: S, t: T, u: U, v: V, w: W, x: X, y: Y, z: Z)=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>, y: Async<Y>, z: Async<Z>)=>Async<Return>;
+    export function liftAsync<R>(f: Function): any {
+        return function(){
+            var actions: Async<any>[] = Array.prototype.slice.call(arguments);
+            return function(success: (r: R)=>void, fail: ()=>void){
+                var args: any[] = new Array<any>(actions.length);
+                var count: number = 0;
+                actions.forEach((action: Async<any>, i: number)=>{
+                    action(function(result: any){ 
+                        args[i] = result; 
+                        count++;
+                        if(count == actions.length){
+                            f.apply(undefined, args)(success, fail);
+                        }
+                    }, fail);
+                });
+            };
+        };
+    }
+
     // sequential evalution
     export function series<A                                                  ,Return>(a: Async<A>                                                                                                                                                                                                                                                                                                                                     , last: Async<Return>): Async<Return>;
     export function series<A,B                                                ,Return>(a: Async<A>, b: Async<B>                                                                                                                                                                                                                                                                                                                        , last: Async<Return>): Async<Return>;
@@ -534,7 +579,6 @@ module masync {
         };
     }
 
-
     // ajax /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     export function get(url: Async<string>, chached?: boolean): Async<string>;
@@ -570,28 +614,6 @@ module masync {
         }
     }
 
-    /// node utils ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /*
-    export module node {
-        declare function require(moduleName: string): any; 
-
-        export module fs {
-
-            export function readFile(path: string): Async<string>{
-                return function(callback: (data: string)=>void, fail: ()=>void){
-                    var fs = require("fs");
-                    fs.readFile(function(err: Error, data: string){
-                        if(err) throw err;
-                        callback(data);
-                    });
-                }
-            }
-
-        }
-    }
-    */
-
     // jquery integration ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     export function fromPromise<T>(promise: jQuery.Promise<T>): Async<T> {
@@ -605,6 +627,20 @@ module masync {
             async((t: T)=>def.resolve(t), ()=>def.reject());
         }).promise();
     }
+
+    // Web Workers integration ///////////////////////////////////////////////////////////////////////////////////////////
+
+    export function fork<A,T>(scriptPath: Async<string>, a: Async<A>): Async<T> {
+        function _fork<A,T>(scriptPath: string, arg: A): Async<T> {
+            return function(success: (t: T)=>void, fail: ()=>void){
+                var worker = new Worker(scriptPath);
+                worker.onmessage = (e)=>{ success(e.data); };
+                worker.postMessage(arg);
+            };
+        }        
+        return liftAsync(_fork)(scriptPath, a);
+    }
+
 }
 
 
