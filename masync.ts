@@ -233,6 +233,14 @@ module masync {
     // (>>)
     export function next<S,T>(a: Async<S>, b: Async<T>): Async<T> {
         return bind(a, ()=>b);
+    }
+
+    function normalize<T>(x: any): Async<T> {
+        return typeof(x) == "string" ? pure(x) : 
+               typeof(x) == "number" ? pure(x) :
+               typeof(x) == "boolean" ? pure(x) :
+               typeof(x) == "object" ? fromPromise(x) : 
+               x;
     }    
 
     // inject and eject //
@@ -405,9 +413,9 @@ module masync {
     // console.log
     export function log(message: Async<string>): Async<void> ;
     export function log(message: string       ): Async<void> ;
+    export function log(message: jQuery.Promise<string>): Async<void> ; 
     export function log(message: any          ): Async<void> {
-        message = typeof(message) == "string" ? pure(message) : message;
-        return fmap(console.log.bind(console), message);
+        return fmap(console.log.bind(console), normalize<string>(message));
     }
 
     // (==)
@@ -506,8 +514,6 @@ module masync {
 
     export function foldl<S,T>(f: Async<(s: S, t: T)=>S>, x: Async<S>, xs: Async<T[]>): Async<S> {
         function _foldl<S,T>(f: (s: S, t: T)=>S, s: S, array: T[]): S {
-            console.log("foldl");
-            throw new Error();
             for(var i = 0; i < array.length; i++){
                 s = f(s, array[i]);
             }
@@ -585,4 +591,91 @@ module masync {
         }
     }
     */
+
+    // jquery integration ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    export function fromPromise<T>(promise: jQuery.Promise<T>): Async<T> {
+        return function(success: (t: T)=>void, fail: ()=>void){
+            jQuery.when(promise).then((t: T)=>success(t)).fail(fail);
+        }
+    }
+
+    export function toPromise<T>(async: Async<T>): jQuery.Promise<T> {
+        return new jQuery.Deferred<T>((def: jQuery.Deferred<T>)=>{
+            async((t: T)=>def.resolve(t), ()=>def.reject());
+        }).promise();
+    }
+}
+
+
+
+
+module jQuery {
+
+    export declare function when<T>(...deferreds: GenericPromise<T>[]): Promise<T>;
+    export declare function when<T>(...deferreds: T[]): Promise<T>;
+
+    export declare function get(url: string, data?: any, success?: any, dataType?: any): Promise;
+    export declare function getJSON(url: string, data?: any, success?: any): Promise;
+    export declare function getScript(url: string, success?: any): Promise;
+
+    export interface GenericPromise<T> {
+        then<U>(onFulfill: (value: T) => U, onReject?: (reason: any) => U): GenericPromise<U>;
+        then<U>(onFulfill: (value: T) => GenericPromise<U>, onReject?: (reason: any) => U): GenericPromise<U>;
+        then<U>(onFulfill: (value: T) => U, onReject?: (reason: any) => GenericPromise<U>): GenericPromise<U>;
+        then<U>(onFulfill: (value: T) => GenericPromise<U>, onReject?: (reason: any) => GenericPromise<U>): GenericPromise<U>;
+    }
+
+    export interface Promise<T> {
+        always(...alwaysCallbacks: any[]): Promise<T>;
+        done(...doneCallbacks: any[]): Promise<T>;
+        fail(...failCallbacks: any[]): Promise<T>;
+        progress(...progressCallbacks: any[]): Promise<T>;
+
+        then<U>(onFulfill: (value: T) => U, onReject?: (...reasons: any[]) => U, onProgress?: (...progression: any[]) => any): Promise<U>;
+        then<U>(onFulfill: (value: T) => GenericPromise<U>, onReject?: (...reasons: any[]) => U, onProgress?: (...progression: any[]) => any): Promise<U>;
+        then<U>(onFulfill: (value: T) => U, onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
+        then<U>(onFulfill: (value: T) => GenericPromise<U>, onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
+
+        // Because JQuery Promises Suck
+        then<U>(onFulfill: (...values: any[]) => U, onReject?: (...reasons: any[]) => U, onProgress?: (...progression: any[]) => any): Promise<U>;
+        then<U>(onFulfill: (...values: any[]) => GenericPromise<U>, onReject?: (...reasons: any[]) => U, onProgress?: (...progression: any[]) => any): Promise<U>;
+        then<U>(onFulfill: (...values: any[]) => U, onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
+        then<U>(onFulfill: (...values: any[]) => GenericPromise<U>, onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
+    }
+
+    export declare class Deferred<T> implements Promise<T> {
+
+        constructor(beforeStart?: (deferred: Deferred<T>)=>any);
+
+        always(...alwaysCallbacks: any[]): Deferred<T>;
+        done(...doneCallbacks: any[]): Deferred<T>;
+        fail(...failCallbacks: any[]): Deferred<T>;
+        progress(...progressCallbacks: any[]): Deferred<T>;
+
+        notify(...args: any[]): Deferred<T>;
+        notifyWith(context: any, ...args: any[]): Deferred<T>;
+
+        reject(...args: any[]): Deferred<T>;
+        rejectWith(context: any, ...args: any[]): Deferred<T>;
+
+        resolve(val: T): Deferred<T>;
+        resolve(...args: any[]): Deferred<T>;
+        resolveWith(context: any, ...args: any[]): Deferred<T>;
+        state(): string;
+
+        promise(target?: any): Promise<T>;
+
+
+        then<U>(onFulfill: (value: T) => U, onReject?: (...reasons: any[]) => U, onProgress?: (...progression: any[]) => any): Promise<U>;
+        then<U>(onFulfill: (value: T) => GenericPromise<U>, onReject?: (...reasons: any[]) => U, onProgress?: (...progression: any[]) => any): Promise<U>;
+        then<U>(onFulfill: (value: T) => U, onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
+        then<U>(onFulfill: (value: T) => GenericPromise<U>, onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
+
+        // Because JQuery Promises Suck
+        then<U>(onFulfill: (...values: any[]) => U, onReject?: (...reasons: any[]) => U, onProgress?: (...progression: any[]) => any): Promise<U>;
+        then<U>(onFulfill: (...values: any[]) => GenericPromise<U>, onReject?: (...reasons: any[]) => U, onProgress?: (...progression: any[]) => any): Promise<U>;
+        then<U>(onFulfill: (...values: any[]) => U, onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
+        then<U>(onFulfill: (...values: any[]) => GenericPromise<U>, onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
+    }
 }
