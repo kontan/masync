@@ -1,11 +1,11 @@
 //
 //
 // 
-//                              async.ts 
+//                               masync 
 //
 //                           version 0.1.0
 // 
-//             site: https://github.com/kontan/async.ts/
+//             site: https://github.com/kontan/masync/
 //             
 //
 //
@@ -32,7 +32,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-module async {
+module masync {
     export interface Async<T> {
         (success: (t: T)=>void, fail: ()=>void): void; 
     }
