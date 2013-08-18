@@ -34,7 +34,7 @@
 
 module masync {
     export interface Async<T> {
-        (success: (t: T)=>void, fail: ()=>void): void; 
+        (succ: (t: T)=>void, fail: ()=>void): void; 
     }
 
     // Functor //
@@ -44,16 +44,16 @@ module masync {
 
     // Applicative //
     export function pure<T>(t: T): Async<T> {
-        return (success: (r: T)=>void, fail: ()=>void)=>success(t);
+        return (succ: (r: T)=>void, fail: ()=>void)=>succ(t);
     }
 
     export function ap<S,T>(f: Async<(t: T)=>S>, x: Async<T>): Async<S> {
-        return function(success: (result: S)=>void, fail: ()=>void){
+        return function(succ: (result: S)=>void, fail: ()=>void){
             var _f: (t: T)=>S;
             var _x: T;
             function fin(){
                 if(typeof _f !== "undefined" && typeof _x !== "undefined"){
-                    success(_f(_x));
+                    succ(_f(_x));
                 }
             }
             f((g: (t: T)=>S)=>{ _f = g; fin(); }, fail);
@@ -63,8 +63,8 @@ module masync {
 
     // Monad //
     export function bind<T,S>(x: Async<T>, f: (t: T)=>Async<S>): Async<S> {
-        return (success: (s: S)=>void, fail: ()=>void)=>{ 
-            x((t: T)=>f(t)(success, fail), fail); 
+        return (succ: (s: S)=>void, fail: ()=>void)=>{ 
+            x((t: T)=>f(t)(succ, fail), fail); 
         };
     }
 
@@ -96,17 +96,17 @@ module masync {
     export function lift<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,  Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K, l: L, m: M, n: N, o: O, p: P, q: Q, r: R, s: S, t: T, u: U, v: V, w: W, x: X, y: Y      )=>Return): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>, y: Async<Y>             )=>Async<Return>;
     export function lift<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K, l: L, m: M, n: N, o: O, p: P, q: Q, r: R, s: S, t: T, u: U, v: V, w: W, x: X, y: Y, z: Z)=>Return): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>, y: Async<Y>, z: Async<Z>)=>Async<Return>;
     export function lift<R>(f: Function): any {
-        return function(){
-            var actions: Async<any>[] = Array.prototype.slice.call(arguments);
-            return function(success: (r: R)=>void, fail: ()=>void){
-                var args: any[] = new Array<any>(actions.length);
+        return ()=>{
+            var args: Async<any>[] = Array.prototype.slice.call(arguments);
+            return (succ: (r: R)=>void, fail: ()=>void)=>{
+                var _args: any[] = new Array<any>(args.length);
                 var count: number = 0;
-                actions.forEach((action: Async<any>, i: number)=>{
-                    action(function(result: any){ 
-                        args[i] = result; 
+                args.forEach((arg: Async<any>, i: number)=>{
+                    arg((_arg: any)=>{ 
+                        _args[i] = _arg;
                         count++;
-                        if(count == actions.length){
-                            success(f.apply(undefined, args));
+                        if(count == args.length){
+                            succ(f.apply(undefined, _args));
                         }
                     }, fail);
                 });
@@ -142,16 +142,16 @@ module masync {
     export function liftAsync<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K, l: L, m: M, n: N, o: O, p: P, q: Q, r: R, s: S, t: T, u: U, v: V, w: W, x: X, y: Y, z: Z)=>Async<Return>): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>, y: Async<Y>, z: Async<Z>)=>Async<Return>;
     export function liftAsync<R>(f: Function): any {
         return function(){
-            var actions: Async<any>[] = Array.prototype.slice.call(arguments);
-            return function(success: (r: R)=>void, fail: ()=>void){
-                var args: any[] = new Array<any>(actions.length);
+            var args: Async<any>[] = Array.prototype.slice.call(arguments);
+            return function(succ: (r: R)=>void, fail: ()=>void){
+                var _args: any[] = new Array<any>(args.length);
                 var count: number = 0;
-                actions.forEach((action: Async<any>, i: number)=>{
-                    action(function(result: any){ 
-                        args[i] = result; 
+                args.forEach((_arg: Async<any>, i: number)=>{
+                    _arg(function(_arg: any){ 
+                        _args[i] = _arg; 
                         count++;
-                        if(count == actions.length){
-                            f.apply(undefined, args)(success, fail);
+                        if(count == args.length){
+                            f.apply(undefined, _args)(succ, fail);
                         }
                     }, fail);
                 });
@@ -160,6 +160,7 @@ module masync {
     }
 
     // sequential evalution
+    export function series<                                                    Return>(                                                                                                                                                                                                                                                                                                                                                  last: Async<Return>): Async<Return>;
     export function series<A                                                  ,Return>(a: Async<A>                                                                                                                                                                                                                                                                                                                                     , last: Async<Return>): Async<Return>;
     export function series<A,B                                                ,Return>(a: Async<A>, b: Async<B>                                                                                                                                                                                                                                                                                                                        , last: Async<Return>): Async<Return>;
     export function series<A,B,C                                              ,Return>(a: Async<A>, b: Async<B>, c: Async<C>                                                                                                                                                                                                                                                                                                           , last: Async<Return>): Async<Return>;
@@ -187,16 +188,11 @@ module masync {
     export function series<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y  ,Return>(a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>, y: Async<Y>             , last: Async<Return>): Async<Return>;
     export function series<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,Return>(a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>, y: Async<Y>, z: Async<Z>, last: Async<Return>): Async<Return>;
     export function series(...xs: Async<any>[]): Async<any> {
-        return function(success: (r: any)=>void, fail: ()=>void){
+        xs = xs.slice(0);
+        return function(succ: (r: any)=>void, fail: ()=>void){
             var _xs: Async<any>[] = xs.slice(0);
             var r: any = null;
-            function run(){
-                if(_xs.length == 0){
-                    success(r);
-                }else{
-                    _xs[0](function(_r){ r = _r; _xs.shift(); run(); }, fail);
-                }
-            }
+            function run(){_xs.length == 0 ? succ(r) : _xs[0](function(_r){ r = _r; _xs.shift(); run(); }, fail); }
             run();        
         };
     }
@@ -229,18 +225,15 @@ module masync {
     export function parallel<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y  >(a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>, y: Async<Y>             ): Async<void>;
     export function parallel<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z>(a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>, y: Async<Y>, z: Async<Z>): Async<void>;
     export function parallel(...xs: Async<any>[]): Async<void> {
-        return function(success: ()=>void, fail: ()=>void){
+        return function(succ: ()=>void, fail: ()=>void){
             var count: number = 0;
             xs.forEach((x: Async<any>, i: number)=>{
-                x(function(result: any){ 
-                    count++;
-                    if(count == xs.length){
-                        success();
-                    } 
+                x((result: any)=>{
+                    if(++count == xs.length) succ();
                 }, fail);
             });
         };
-    }    
+    }
 
     // run actions
     export function run<A                                                  >(a: Async<A>                                                                                                                                                                                                                                                                                                                                     ): void;
@@ -269,8 +262,8 @@ module masync {
     export function run<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X    >(a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>                          ): void;
     export function run<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y  >(a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>, y: Async<Y>             ): void;
     export function run<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z>(a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>, y: Async<Y>, z: Async<Z>): void;
-    export function run(...actions: Async<any>[]): void {
-        series.apply(undefined, actions)(function(){}, function(){ throw new Error(); });
+    export function run(...xs: Async<any>[]): void {
+        series.apply(undefined, xs)(()=>{}, function(){ throw new Error(); });
     }
 
     // Utils //
@@ -280,23 +273,28 @@ module masync {
         return bind(a, ()=>b);
     }
 
-    function normalize<T>(x: any): Async<T> {
-        return typeof(x) == "string" ? pure(x) : 
-               typeof(x) == "number" ? pure(x) :
-               typeof(x) == "boolean" ? pure(x) :
-               typeof(x) == "object" ? fromPromise(x) : 
-               x;
+    function _pure_<T>(x: any): Async<T> {
+        switch(typeof x){
+            case "string":
+            case "number":
+            case "boolean":
+            case "object":
+            case "undefined":
+                return pure(x);
+            default:
+                return x;
+        }
     }    
 
     // inject and eject //
 
     export function inject<T>(f: ()=>T): Async<T> {
-        return function(success: (t: T)=>void, fail: ()=>void){ success(f()); };
+        return function(succ: (t: T)=>void, fail: ()=>void){ succ(f()); };
     }
 
     export function eject<T>(x: Async<T>, f: (t: T)=>void): Async<void> {
-        return function(success: ()=>void, fail: ()=>void){
-            x(function(result: T){ f(result); success(); }, fail);
+        return function(succ: ()=>void, fail: ()=>void){
+            x(function(result: T){ f(result); succ(); }, fail);
         };   
     }
 
@@ -304,14 +302,14 @@ module masync {
     // error handling ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     export function fail(): Async<void> {
-        return function(success: ()=>void, fail: ()=>void){
+        return function(succ: ()=>void, fail: ()=>void){
             fail();
         };
     }    
 
-    export function recover<T>(defaultValue: T, action: Async<T>): Async<T> {
-        return function(success: (result: T)=>void, fail: ()=>void){
-            action(success, function(){ success(defaultValue); });
+    export function recover<T>(defaultValue: T, xs: Async<T>): Async<T> {
+        return function(succ: (result: T)=>void, fail: ()=>void){
+            xs(succ, function(){ succ(defaultValue); });
         };
     }
 
@@ -319,38 +317,38 @@ module masync {
 
     export var nop: Async<void> = pure(undefined);
 
-    export function cache<T>(action: Async<T>): Async<T> {
+    export function cache<T>(xs: Async<T>): Async<T> {
         var value: T = undefined;
         var succeed: boolean = undefined;
-        var listener: { success: (t: T)=>void; fail: ()=>void; }[] = [];
-        return function(success: (result: T)=>void, fail: ()=>void){
+        var listener: { succ: (t: T)=>void; fail: ()=>void; }[] = [];
+        return function(succ: (result: T)=>void, fail: ()=>void){
             if(typeof succeed === "undefined"){
                 if(listener.length == 0){
-                    action(function(v: T){ 
+                    xs(function(v: T){ 
                         value = v;
                         succeed = true;
-                        listener.forEach(listener=>listener.success(v));
+                        listener.forEach(listener=>listener.succ(v));
                     }, function(){ 
                         succeed = false;
                         listener.forEach(listener=>listener.fail());
                     });
                 }
-                listener.push({ success: success, fail: fail });                
+                listener.push({ succ: succ, fail: fail });                
             }else if(succeed){
-                success(value);
+                succ(value);
             }else{
                 fail();
             }
         };
     }    
 
-    export function sooner<T>(...actions: Async<T>[]): Async<T> {
-        return function(success: (result: T)=>void, fail: ()=>void){
+    export function fastest<T>(...xs: Async<T>[]): Async<T> {
+        return function(succ: (result: T)=>void, fail: ()=>void){
             var active: boolean = true;
             function _succ(result: T){
                 if(active){
                     active = false;
-                    success(result);
+                    succ(result);
                 }
             }
             function _fail(){
@@ -359,17 +357,17 @@ module masync {
                     fail();
                 }
             }
-            actions.forEach(action=>action(_succ, _fail));
+            xs.forEach(x=>x(_succ, _fail));
         };
     }
 
-    export function when<T>(action: Async<boolean>, ifthen: Async<T>, ifelse?: Async<T>): Async<T> {
-        return function(success: (result: T)=>void, fail: ()=>void){
-            action(function(result: boolean){
+    export function when<T>(x: Async<boolean>, ifthen: Async<T>, ifelse?: Async<T>): Async<T> {
+        return function(succ: (result: T)=>void, fail: ()=>void){
+            x(function(result: boolean){
                 if(result){
-                    ifthen(success, fail);
+                    ifthen(succ, fail);
                 }else if(ifelse){
-                    ifelse(success, fail);
+                    ifelse(succ, fail);
                 }
             }, fail);
         }
@@ -379,9 +377,9 @@ module masync {
     export function repeat<I,T>(keys: I[], f: (i: I)=>Async<T>): Async<T> ;
     export function repeat<I,T>(keys: any, f: (i: I)=>Async<T>): Async<T> {
         keys = keys instanceof Array ? pure(keys) : keys;
-        return function(success: ()=>void, fail: ()=>void){
+        return function(succ: ()=>void, fail: ()=>void){
             keys(function(ks: I[]){
-                series.apply(undefined, ks.map(f))(success, fail);
+                series.apply(undefined, ks.map(f))(succ, fail);
             }, fail);
         };
     }
@@ -393,9 +391,9 @@ module masync {
     export function wait(milliseconds: number       ): Async<void>;
     export function wait(milliseconds: any          ): Async<void> {
         milliseconds = typeof(milliseconds) === "number" ? pure(milliseconds) : milliseconds;
-        return function(success: ()=>void, fail: ()=>void){
+        return function(succ: ()=>void, fail: ()=>void){
             milliseconds(function(result: number){
-                window.setTimeout(function(){ success(); }, result);
+                window.setTimeout(function(){ succ(); }, result);
             }, fail);
         }
     }
@@ -404,8 +402,8 @@ module masync {
     export function setTimeout(a: Async<any>, milliseconds: number       ): Async<number>;
     export function setTimeout(a: Async<any>, milliseconds: any          ): Async<number> {
         milliseconds = typeof(milliseconds) === "number" ? pure(milliseconds) : milliseconds;
-        return function(success: (t: number)=>void, fail: ()=>void){
-            milliseconds(function(t: number){ success(window.setTimeout(function(){ run(a); }, t)); }, fail);
+        return function(succ: (t: number)=>void, fail: ()=>void){
+            milliseconds(function(t: number){ succ(window.setTimeout(function(){ run(a); }, t)); }, fail);
         }
     }
 
@@ -413,8 +411,8 @@ module masync {
     export function clearTimeout(timerId: number       ): Async<void>;
     export function clearTimeout(timerId: any          ): Async<void> {
         timerId = typeof(timerId) === "number" ? pure(timerId) : timerId;
-        return function(success: ()=>void, fail: ()=>void){
-            timerId(function(t: number){ window.clearTimeout(t); success(); }, fail);
+        return function(succ: ()=>void, fail: ()=>void){
+            timerId(function(t: number){ window.clearTimeout(t); succ(); }, fail);
         }
     }
 
@@ -422,8 +420,8 @@ module masync {
     export function setInterval(a: Async<any>, milliseconds: number       ): Async<number>;
     export function setInterval(a: Async<any>, milliseconds: any          ): Async<number> {
         milliseconds = typeof(milliseconds) === "number" ? pure(milliseconds) : milliseconds;
-        return function(success: (t: number)=>void, fail: ()=>void){
-            milliseconds(function(t: number){ success(window.setInterval(function(){ run(a); }, t)); }, fail);
+        return function(succ: (t: number)=>void, fail: ()=>void){
+            milliseconds(function(t: number){ succ(window.setInterval(function(){ run(a); }, t)); }, fail);
         }
     }
 
@@ -431,14 +429,14 @@ module masync {
     export function clearInterval(timerId: number       ): Async<void>;
     export function clearInterval(timerId: any          ): Async<void> {
         timerId = typeof(timerId) === "number" ? pure(timerId) : timerId;
-        return function(success: ()=>void, fail: ()=>void){
-            timerId(function(t: number){ window.clearInterval(t); success(); }, fail);
+        return function(succ: ()=>void, fail: ()=>void){
+            timerId(function(t: number){ window.clearInterval(t); succ(); }, fail);
         }
     }
 
     export function requestAnimationFrame(a: Async<any>): Async<number> {
-        return function(success: (t: number)=>void, fail: ()=>void){
-            success(window.requestAnimationFrame(function(){ run(a); }));
+        return function(succ: (t: number)=>void, fail: ()=>void){
+            succ(window.requestAnimationFrame(function(){ run(a); }));
         }
     }
 
@@ -446,8 +444,8 @@ module masync {
     export function cancelAnimationFrame(timerId: number       ): Async<void>;
     export function cancelAnimationFrame(timerId: any          ): Async<void> {
         timerId = typeof(timerId) === "number" ? pure(timerId) : timerId;
-        return function(success: ()=>void, fail: ()=>void){
-            timerId(function(t: number){ window.cancelAnimationFrame(t); success(); }, fail);
+        return function(succ: ()=>void, fail: ()=>void){
+            timerId(function(t: number){ window.cancelAnimationFrame(t); succ(); }, fail);
         }
     }
 
@@ -460,7 +458,7 @@ module masync {
     export function log(message: string       ): Async<void> ;
     export function log(message: jQuery.Promise<string>): Async<void> ; 
     export function log(message: any          ): Async<void> {
-        return fmap(console.log.bind(console), normalize<string>(message));
+        return fmap(console.log.bind(console), _pure_<string>(message));
     }
 
     // (==)
@@ -481,11 +479,11 @@ module masync {
     // number //
 
     export function max(...xs: Async<number>[]): Async<number>{
-        return lift(ys=>Math.max.apply(undefined, ys))(array(xs));
+        return lift(ys=>Math.max.apply(undefined, ys))(amap(xs));
     }
 
     export function min(...xs: Async<number>[]): Async<number>{
-        return lift(ys=>Math.min.apply(undefined, ys))(array(xs));
+        return lift(ys=>Math.min.apply(undefined, ys))(amap(xs));
     }
 
     export function abs(x: Async<number>): Async<number>{
@@ -503,25 +501,29 @@ module masync {
     }
 
     export function strcat(...xs: Async<string>[]): Async<string> {
-        return lift((ys: string[])=>ys.join(""))(array(xs));
+        return lift((ys: string[])=>ys.join(""))(amap(xs));
     }    
 
     // array //
 
-    export function array<T>(actions: Async<T>[]): Async<T[]> {
-        return function(success: (result: T[])=>void, fail: ()=>void){
-            var values: T[] = new Array<T>(actions.length);
+    export function amap<T>(xs: Async<T>[]): Async<T[]> {
+        return function(succ: (result: T[])=>void, fail: ()=>void){
+            var values: T[] = new Array<T>(xs.length);
             var count: number = 0;
-            actions.forEach((action: Async, i: number)=>{
-                action(function(result: T){ 
+            xs.forEach((x: Async, i: number)=>{
+                x(function(result: T){ 
                     values[i] = result;
                     count++;
-                    if(count == actions.length){
-                        success(values);
+                    if(count == xs.length){
+                        succ(values);
                     } 
                 }, fail);
             });
         };
+    }
+
+    export function array<T>(...xs: Async<T>[]): Async<T[]> {
+        return amap(xs);
     }
 
     export function length(xs: Async<any[]>): Async<number> {
@@ -543,7 +545,7 @@ module masync {
     }    
 
     export function concat<T>(...xs: Async<T[]>[]): Async<T[]> {
-        return lift((ys: T[])=>[].concat(ys))(array(xs));
+        return lift((ys: T[])=>[].concat(ys))(amap(xs));
     } 
 
     export function join(xs: Async<string[]>, separator: Async<string> = pure(",")): Async<string> {
@@ -568,28 +570,30 @@ module masync {
     }
 
     export function and(xs: Async<boolean[]>): Async<boolean> {
-        return function(success: (result: boolean)=>void, fail: ()=>void){
+        return function(succ: (result: boolean)=>void, fail: ()=>void){
             return foldl(pure((a: boolean, b: boolean)=>a&&b), pure(true), xs);
         };
     }
 
     export function or(xs: Async<boolean[]>): Async<boolean> {
-        return function(success: (result: boolean)=>void, fail: ()=>void){
+        return function(succ: (result: boolean)=>void, fail: ()=>void){
             return foldl(pure((a: boolean, b: boolean)=>a||b), pure(false), xs);
         };
     }
 
     // ajax /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    // get a text file with XMLHttpRequest.
+    // XMLHttpRequest でファイルを取得します。 
     export function get(url: Async<string>, chached?: boolean): Async<string>;
     export function get(url: string       , chached?: boolean): Async<string>;
     export function get(url: any          , chached: boolean = true): Async<string> {
         url = typeof(url) === "string" ? pure(url) : url;
-        return function(success: (text: string)=>void, fail: ()=>void){
+        return function(succ: (text: string)=>void, fail: ()=>void){
             url(function(result: string){
                 var xhr = new XMLHttpRequest();
                 xhr.onload = function(){
-                    success(xhr.responseText);
+                    succ(xhr.responseText);
                 };
                 xhr.onerror = function(){
                     fail();
@@ -606,10 +610,10 @@ module masync {
     }
 
     export function getImage(url: string): Async<HTMLImageElement> {
-        return function(success: (img: HTMLImageElement)=>void, fail: ()=>void){
+        return function(succ: (img: HTMLImageElement)=>void, fail: ()=>void){
             var img = new Image();
             img.src = url;
-            img.addEventListener("load", function(){ success(img); });
+            img.addEventListener("load", function(){ succ(img); });
             img.addEventListener("error", fail);
         }
     }
@@ -617,8 +621,8 @@ module masync {
     // jquery integration ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     export function fromPromise<T>(promise: jQuery.Promise<T>): Async<T> {
-        return function(success: (t: T)=>void, fail: ()=>void){
-            jQuery.when(promise).then((t: T)=>success(t)).fail(fail);
+        return function(succ: (t: T)=>void, fail: ()=>void){
+            jQuery.when(promise).then((t: T)=>succ(t)).fail(fail);
         }
     }
 
@@ -630,17 +634,28 @@ module masync {
 
     // Web Workers integration ///////////////////////////////////////////////////////////////////////////////////////////
 
-    export function fork<A,T>(scriptPath: Async<string>, a: Async<A>): Async<T> {
-        function _fork<A,T>(scriptPath: string, arg: A): Async<T> {
-            return function(success: (t: T)=>void, fail: ()=>void){
+    // worker(s,a) creates a worker with a script s and run it.
+    // ワーカースレッドを作成して実行します。
+    export function worker<T,S>(scriptPath: Async<string>, arg: Async<T>): Async<S> ;
+    export function worker<T,S>(scriptPath: Async<string>, arg: number  ): Async<S> ;
+    export function worker<T,S>(scriptPath: Async<string>, arg: string  ): Async<S> ;
+    export function worker<T,S>(scriptPath: Async<string>, arg: boolean ): Async<S> ;
+    export function worker<T,S>(scriptPath: Async<string>               ): Async<S> ;
+    export function worker<T,S>(scriptPath:       string , arg: Async<T>): Async<S> ;
+    export function worker<T,S>(scriptPath:       string , arg: number  ): Async<S> ;
+    export function worker<T,S>(scriptPath:       string , arg: string  ): Async<S> ;
+    export function worker<T,S>(scriptPath:       string , arg: boolean ): Async<S> ;
+    export function worker<T,S>(scriptPath:       string                ): Async<S> ;
+    export function worker<T,S>(scriptPath: any          , arg?: any    ): Async<S> {
+        function _fork<T,S>(scriptPath: string, _arg: T): Async<S> {
+            return function(succ: (t: S)=>void, fail: ()=>void){
                 var worker = new Worker(scriptPath);
-                worker.onmessage = (e)=>{ success(e.data); };
-                worker.postMessage(arg);
+                worker.onmessage = (e)=>{ succ(e.data); };
+                worker.postMessage(_arg);
             };
-        }        
-        return liftAsync(_fork)(scriptPath, a);
+        }
+        return liftAsync(_fork)(_pure_(scriptPath), _pure_(arg));
     }
-
 }
 
 
