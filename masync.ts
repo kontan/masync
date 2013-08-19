@@ -69,6 +69,7 @@ module masync {
     }
 
     // lifting
+    // functions are not curried in JavaScript, hence we cannot equate lift with fmap.
     export function lift<A,                                                  Return>(f: (a: A                                                                                                                                                      )=>Return): (a: Async<A>                                                                                                                                                                                                                                                                                                                                     )=>Async<Return>;
     export function lift<A,B,                                                Return>(f: (a: A, b: B                                                                                                                                                )=>Return): (a: Async<A>, b: Async<B>                                                                                                                                                                                                                                                                                                                        )=>Async<Return>;
     export function lift<A,B,C,                                              Return>(f: (a: A, b: B, c: C                                                                                                                                          )=>Return): (a: Async<A>, b: Async<B>, c: Async<C>                                                                                                                                                                                                                                                                                                           )=>Async<Return>;
@@ -98,18 +99,8 @@ module masync {
     export function lift<R>(f: Function): any {
         return ()=>{
             var args: Async<any>[] = Array.prototype.slice.call(arguments);
-            return (succ: (r: R)=>void, fail: ()=>void)=>{
-                var _args: any[] = new Array<any>(args.length);
-                var count: number = 0;
-                args.forEach((arg: Async<any>, i: number)=>{
-                    arg((_arg: any)=>{ 
-                        _args[i] = _arg;
-                        count++;
-                        if(count == args.length){
-                            succ(f.apply(undefined, _args));
-                        }
-                    }, fail);
-                });
+            return (succ: (r: R)=>void, fail: ()=>void)=>{  
+                amap(args)(_args=>succ(f.apply(undefined, _args)), fail);
             };
         };
     }
@@ -144,17 +135,7 @@ module masync {
         return function(){
             var args: Async<any>[] = Array.prototype.slice.call(arguments);
             return function(succ: (r: R)=>void, fail: ()=>void){
-                var _args: any[] = new Array<any>(args.length);
-                var count: number = 0;
-                args.forEach((_arg: Async<any>, i: number)=>{
-                    _arg(function(_arg: any){ 
-                        _args[i] = _arg; 
-                        count++;
-                        if(count == args.length){
-                            f.apply(undefined, _args)(succ, fail);
-                        }
-                    }, fail);
-                });
+                amap(args)(_args=>{ f.apply(undefined, _args)(succ, fail); }, fail);
             };
         };
     }
@@ -225,13 +206,9 @@ module masync {
     export function parallel<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y  >(a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>, y: Async<Y>             ): Async<void>;
     export function parallel<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z>(a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>, y: Async<Y>, z: Async<Z>): Async<void>;
     export function parallel(...xs: Async<any>[]): Async<void> {
+        var args = xs.slice(0);
         return function(succ: ()=>void, fail: ()=>void){
-            var count: number = 0;
-            xs.forEach((x: Async<any>, i: number)=>{
-                x((result: any)=>{
-                    if(++count == xs.length) succ();
-                }, fail);
-            });
+            amap(args)(_args=>succ(), fail);
         };
     }
 
@@ -307,11 +284,20 @@ module masync {
         };
     }    
 
-    export function recover<T>(defaultValue: T, xs: Async<T>): Async<T> {
+    export function recover<T>(defaultValue: Async<T>, xs: Async<T>): Async<T> ;
+    export function recover<T>(defaultValue:   string, xs: Async<T>): Async<T> ;
+    export function recover<T>(defaultValue: any     , xs: Async<T>): Async<T> {
+        defaultValue = _pure_(defaultValue);
         return function(succ: (result: T)=>void, fail: ()=>void){
-            xs(succ, function(){ succ(defaultValue); });
+            xs(succ, function(){ defaultValue(_def=>succ(_def), fail); });
         };
     }
+
+    export function capture<T>(xs: Async<T>, callback: ()=>T): Async<T> {
+        return function(succ: (result: T)=>void, fail: ()=>void){
+            xs(succ, function(){ succ(callback()); });
+        };
+    }    
 
     // control flow ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -507,11 +493,11 @@ module masync {
     // array //
 
     export function amap<T>(xs: Async<T>[]): Async<T[]> {
-        return function(succ: (result: T[])=>void, fail: ()=>void){
+        return (succ: (result: T[])=>void, fail: ()=>void)=>{
             var values: T[] = new Array<T>(xs.length);
             var count: number = 0;
             xs.forEach((x: Async, i: number)=>{
-                x(function(result: T){ 
+                x((result: T)=>{ 
                     values[i] = result;
                     count++;
                     if(count == xs.length){
@@ -527,7 +513,7 @@ module masync {
     }
 
     export function length(xs: Async<any[]>): Async<number> {
-        return lift(xs=>xs.length)(xs);
+        return fmap(xs=>xs.length, xs);
     }
 
     export function at<T>(i: Async<number>, xs: Async<T[]>): Async<T>;
@@ -656,9 +642,42 @@ module masync {
         }
         return liftAsync(_fork)(_pure_(scriptPath), _pure_(arg));
     }
+
+    // Node integration ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    declare function require(moduleName: string): any;
+
+
+
+    export function liftNode<A,Z>  (f: (a: A,       g: (err: Error, data: Z)=>void)=>void): (a: Async<A>             )=>Async<Z>;
+    export function liftNode<A,B,Z>(f: (a: A, b: B, g: (err: Error, data: Z)=>void)=>void): (a: Async<A>, b: Async<B>)=>Async<Z>;
+    export function liftNode<Z>(f: Function): any {
+        return ()=>{
+            var args = Array.prototype.slice.call(arguments);
+            return function(succ: (t: Z)=>void, fail: ()=>void){
+                amap(args)(_args=>{  
+                    _args.push((err: Error, data: Z)=> err ? fail() : succ(data));    // lift a function and add the function as callback
+                    f.apply(undefined, _args);
+                }, fail);
+            };
+        };
+    }
+
+    export module fs {
+        export interface ReadFileOptions { encoding?: String; flag?: string; }
+
+        export interface Buffer {
+        }
+
+        export function readFile(fileName: Async<string>, options?: ReadFileOptions): Async<Buffer>;
+        export function readFile(fileName: string,        options?: ReadFileOptions): Async<Buffer>;
+        export function readFile(fileName: any,           options?: ReadFileOptions): Async<Buffer> {
+            var fs = require("fs");
+            return liftNode<string,ReadFileOptions,string>(fs.readFile.bind(fs))(_pure_(fileName), pure(options));
+        }
+    }
+  
 }
-
-
 
 
 module jQuery {
@@ -671,62 +690,49 @@ module jQuery {
     export declare function getScript(url: string, success?: any): Promise;
 
     export interface GenericPromise<T> {
-        then<U>(onFulfill: (value: T) => U, onReject?: (reason: any) => U): GenericPromise<U>;
-        then<U>(onFulfill: (value: T) => GenericPromise<U>, onReject?: (reason: any) => U): GenericPromise<U>;
-        then<U>(onFulfill: (value: T) => U, onReject?: (reason: any) => GenericPromise<U>): GenericPromise<U>;
+        then<U>(onFulfill: (value: T) => U,                 onReject?: (reason: any) => U                ): GenericPromise<U>;
+        then<U>(onFulfill: (value: T) => GenericPromise<U>, onReject?: (reason: any) => U                ): GenericPromise<U>;
+        then<U>(onFulfill: (value: T) => U,                 onReject?: (reason: any) => GenericPromise<U>): GenericPromise<U>;
         then<U>(onFulfill: (value: T) => GenericPromise<U>, onReject?: (reason: any) => GenericPromise<U>): GenericPromise<U>;
     }
 
     export interface Promise<T> {
-        always(...alwaysCallbacks: any[]): Promise<T>;
-        done(...doneCallbacks: any[]): Promise<T>;
-        fail(...failCallbacks: any[]): Promise<T>;
+        always  (...alwaysCallbacks:   any[]): Promise<T>;
+        done    (...doneCallbacks:     any[]): Promise<T>;
+        fail    (...failCallbacks:     any[]): Promise<T>;
         progress(...progressCallbacks: any[]): Promise<T>;
 
-        then<U>(onFulfill: (value: T) => U, onReject?: (...reasons: any[]) => U, onProgress?: (...progression: any[]) => any): Promise<U>;
-        then<U>(onFulfill: (value: T) => GenericPromise<U>, onReject?: (...reasons: any[]) => U, onProgress?: (...progression: any[]) => any): Promise<U>;
-        then<U>(onFulfill: (value: T) => U, onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
+        then<U>(onFulfill: (value: T) => U,                 onReject?: (...reasons: any[]) => U,                 onProgress?: (...progression: any[]) => any): Promise<U>;
+        then<U>(onFulfill: (value: T) => GenericPromise<U>, onReject?: (...reasons: any[]) => U,                 onProgress?: (...progression: any[]) => any): Promise<U>;
+        then<U>(onFulfill: (value: T) => U,                 onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
         then<U>(onFulfill: (value: T) => GenericPromise<U>, onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
-
-        // Because JQuery Promises Suck
-        then<U>(onFulfill: (...values: any[]) => U, onReject?: (...reasons: any[]) => U, onProgress?: (...progression: any[]) => any): Promise<U>;
-        then<U>(onFulfill: (...values: any[]) => GenericPromise<U>, onReject?: (...reasons: any[]) => U, onProgress?: (...progression: any[]) => any): Promise<U>;
-        then<U>(onFulfill: (...values: any[]) => U, onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
-        then<U>(onFulfill: (...values: any[]) => GenericPromise<U>, onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
     }
 
     export declare class Deferred<T> implements Promise<T> {
 
         constructor(beforeStart?: (deferred: Deferred<T>)=>any);
 
-        always(...alwaysCallbacks: any[]): Deferred<T>;
-        done(...doneCallbacks: any[]): Deferred<T>;
-        fail(...failCallbacks: any[]): Deferred<T>;
-        progress(...progressCallbacks: any[]): Deferred<T>;
+        always     (...alwaysCallbacks:   any[] ): Deferred<T>;
+        done       (...doneCallbacks:     any[] ): Deferred<T>;
+        fail       (...failCallbacks:     any[] ): Deferred<T>;
+        progress   (...progressCallbacks: any[] ): Deferred<T>;
 
-        notify(...args: any[]): Deferred<T>;
-        notifyWith(context: any, ...args: any[]): Deferred<T>;
+        notify     (...args: any[]              ): Deferred<T>;
+        notifyWith (context: any, ...args: any[]): Deferred<T>;
 
-        reject(...args: any[]): Deferred<T>;
-        rejectWith(context: any, ...args: any[]): Deferred<T>;
+        reject     (...args: any[]): Deferred<T>;
+        rejectWith (context: any, ...args: any[]): Deferred<T>;
 
-        resolve(val: T): Deferred<T>;
-        resolve(...args: any[]): Deferred<T>;
+        resolve    (val:     T                  ): Deferred<T>;
+        resolve    (...args: any[]              ): Deferred<T>;
         resolveWith(context: any, ...args: any[]): Deferred<T>;
         state(): string;
 
         promise(target?: any): Promise<T>;
 
-
-        then<U>(onFulfill: (value: T) => U, onReject?: (...reasons: any[]) => U, onProgress?: (...progression: any[]) => any): Promise<U>;
-        then<U>(onFulfill: (value: T) => GenericPromise<U>, onReject?: (...reasons: any[]) => U, onProgress?: (...progression: any[]) => any): Promise<U>;
-        then<U>(onFulfill: (value: T) => U, onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
+        then<U>(onFulfill: (value: T) => U,                 onReject?: (...reasons: any[]) => U,                 onProgress?: (...progression: any[]) => any): Promise<U>;
+        then<U>(onFulfill: (value: T) => GenericPromise<U>, onReject?: (...reasons: any[]) => U,                 onProgress?: (...progression: any[]) => any): Promise<U>;
+        then<U>(onFulfill: (value: T) => U,                 onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
         then<U>(onFulfill: (value: T) => GenericPromise<U>, onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
-
-        // Because JQuery Promises Suck
-        then<U>(onFulfill: (...values: any[]) => U, onReject?: (...reasons: any[]) => U, onProgress?: (...progression: any[]) => any): Promise<U>;
-        then<U>(onFulfill: (...values: any[]) => GenericPromise<U>, onReject?: (...reasons: any[]) => U, onProgress?: (...progression: any[]) => any): Promise<U>;
-        then<U>(onFulfill: (...values: any[]) => U, onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
-        then<U>(onFulfill: (...values: any[]) => GenericPromise<U>, onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
     }
 }

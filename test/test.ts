@@ -1,7 +1,24 @@
 /// <reference path="../masync.ts" />
 
+// fake node
+function require(moduleName: string): any {
+    switch(moduleName){
+        case "fs":
+            return {
+                readFile: (path: string, option: any, callback: (err: Error, data: string)=>void)=>{
+                    masync.get(path)((data)=>callback(null, data), ()=>{throw new Error();});
+                }
+            };
+        default:
+            throw new Error();
+    }
+}
+
+
 module masync.tests {
 
+    // Qunit type declarations //////////////////////////////////////////////////////////////////////////////////////////
+    
     declare function test(name: string, callbak: ()=>void): void;
     declare function ok(condition: boolean, message?: string): void;
     declare function throws(block: ()=>any, err: new()=>Error, message?: string): void;
@@ -10,6 +27,8 @@ module masync.tests {
         function module(name: string, lifecycle: ()=>void): void;
     }
 
+    // utils ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     function check<T>(value: Async<T>, reference: T, name: string, message?: string): masync.Async<void> {
         return masync.eject(value, (x)=>{
             test(name, ()=>{
@@ -17,6 +36,8 @@ module masync.tests {
             });
         });
     }
+
+    //  tests cases ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
     module array {
         masync.run(    
@@ -46,14 +67,48 @@ module masync.tests {
             )
         );
         masync.run(check(v, 20, "recover"));
+
+        function findFile(path: string){
+            return masync.recover("Error: No such file: " + path,
+                masync.get(path)
+            );
+        }
+
+
+        masync.run(
+            check(findFile("a.txt"), "a", "recover: file open success"),
+            check(findFile("noexistfile.txt"), "Error: No such file: noexistfile.txt", "recover: file open fail")
+        );
+
+        masync.run(masync.log(findFile("a.txt")));
+
+
+
+        masync.run(
+            check(
+                masync.recover(masync.get("a.txt"),
+                    masync.get("noexistfile.txt")
+                ), "a", "recover with other file"
+            )
+        );        
     }
 
     module fileopen {
+
         var a = masync.get("a.txt");
         var b = masync.get("b.txt");
         masync.run(
             masync.log("hoge"),
-            check(masync.strcat(a, b), "ab", "fileopen")
+            check(masync.strcat(a, b), "ab", "parallel fileopen")
+        );
+
+
+        var c = masync.get("c.txt");
+        var d = masync.get("d.txt");
+        masync.run(
+            c,
+            d,
+            check(masync.strcat(c, d), "cd", "sequential fileopen")
         );
     }
 
@@ -103,5 +158,9 @@ module masync.tests {
         masync.run(
             check(masync.worker("worker.js", masync.pure(10)), 20, "fork")
         );
+    }
+
+    module node {
+        masync.run(check(masync.fs.readFile("a.txt"), "a", "node readfile"));
     }
 }
