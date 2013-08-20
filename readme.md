@@ -18,13 +18,13 @@ Let's see a first example. Create a HTML file that has following codes.
     <script type="text/javascript" src="masync.js"></script>
     <script type="text/javascript">
     masync.run(
-        masync.log("Hello, ")
+        masync.log("Hello, "),
         masync.wait(3000),
         masync.log("asynchronous world!")
     );
     </script>
 
-Create a new tab and open JavaScript developer's console. Then drag and drop the HTML file to the empty tab to execute the code. You will get "Hello, asynchronous world!" in your console **three seconds later**. `masync.wait` stops execution in the specified milliseconds. `masync.log` prints a text like `console.log` in console. `masync.run` begin those tasks sequentially. But don't mistake asynchronous for synchronous. **These codes run in asynchronous.**
+Create a new tab and open JavaScript developer's console. Then drag and drop the HTML file to the empty tab to execute the code. At first you will see "Hello, " in your console, then you will get "asynchronous world!" **three seconds later**. `masync.wait` stops execution in the specified milliseconds. `masync.log` prints a text like `console.log` in console. `masync.run` begin those tasks sequentially. However, don't mistake asynchronous for synchronous. **These codes run in asynchronous.**
 
 Here's next example. `masync.wget` send XMLHttpRequest and return the data **in asynchronous**. You can pass the result data to `masync.log` directly. You don't need to use your callback function to finish the task. The following code requests *first.txt* and prints contents of the text file, then requests *second.txt* and print it in console. It's looks like synchronous, but asynchronous.
 
