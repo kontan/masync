@@ -34,7 +34,7 @@
 
 module masync {
     export interface Async<T> {
-        (succ: (t: T)=>void, fail: ()=>void): void; 
+        (succ: (t: T)=>void, fail: (message?: string)=>void): void; 
     }
 
     // Functor //
@@ -240,7 +240,7 @@ module masync {
     export function run<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y  >(a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>, y: Async<Y>             ): void;
     export function run<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z>(a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>, y: Async<Y>, z: Async<Z>): void;
     export function run(...xs: Async<any>[]): void {
-        series.apply(undefined, xs)(()=>{}, function(){ throw new Error(); });
+        series.apply(undefined, xs)(()=>{}, function(message: string){ throw new Error(message); });
     }
 
     // Utils //
@@ -278,9 +278,9 @@ module masync {
 
     // error handling ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    export function fail(): Async<void> {
-        return function(succ: ()=>void, fail: ()=>void){
-            fail();
+    export function fail(message?: string): Async<void> {
+        return (succ: ()=>void, fail: (message?: string)=>void)=>{
+            fail(message);
         };
     }    
 
@@ -293,9 +293,9 @@ module masync {
         };
     }
 
-    export function capture<T>(xs: Async<T>, callback: ()=>T): Async<T> {
+    export function capture<T>(xs: Async<T>, callback: (message?: string)=>T): Async<T> {
         return function(succ: (result: T)=>void, fail: ()=>void){
-            xs(succ, function(){ succ(callback()); });
+            xs(succ, (message?: string)=>{ succ(callback(message)); });
         };
     }    
 
@@ -524,14 +524,15 @@ module masync {
     export function get(url: string       , chached?: boolean): Async<string>;
     export function get(url: any          , chached: boolean = true): Async<string> {
         url = typeof(url) === "string" ? pure(url) : url;
-        return function(succ: (text: string)=>void, fail: ()=>void){
+        return function(succ: (text: string)=>void, fail: (message?: string)=>void){
             url(function(result: string){
                 var xhr = new XMLHttpRequest();
                 xhr.onload = function(){
                     succ(xhr.responseText);
                 };
-                xhr.onerror = function(){
-                    fail();
+                xhr.onerror = function(e: ErrorEvent){
+                    e.preventDefault();
+                    fail("masync.get: " + e.toString());
                 };
                 xhr.open("GET", result);
                 if( ! chached){

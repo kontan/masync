@@ -123,6 +123,12 @@ module masync.tests {
     module error {
         test("error", ()=>{
             throws(()=>{ masync.run(masync.fail()) }, Error);
+            /*
+            masync.run(
+                masync.wait(1),
+                masync.fail("fail in test:error!")
+            );
+            */
         });
 
         var v: masync.Async<number> = masync.recover(20,

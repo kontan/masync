@@ -56,7 +56,7 @@ You can apply a asynchronous function to asynchronous data. The following code p
 
     masync.run(masync.log(masync.toUpperCase("Hello!")));
 
-*Callback Hells will be expelled*. A framework of masync is based on [Monad](http://www.haskell.org/haskellwiki/All_About_Monads) and masync is inspired by IO Monad in Haskell. This framework is very simple, though, thus flexible and powerful. 
+A framework of masync is based on [Monad](http://www.haskell.org/haskellwiki/All_About_Monads) and masync is inspired by IO Monad in Haskell. This framework is very simple, though, thus flexible and powerful. 
 
 ## API Reference
 
@@ -128,18 +128,9 @@ Bind a Async object and a function. The function `f` receives a value from `x`. 
 
 ------------
 
-#### wait
-
-    function wait(seconds: Async<number>): Async<void>;
-    function wait(seconds:       number ): Async<void>;    
-
-Wait in the specified time span. **The parameter is in seconds, not milliseconds**.
-
-----
-
 #### series
 
-    function series(a: Async<A>, b: Async<B>, ...., z: Async<Z>): Async<Z>
+    series(a: Async<A>, b: Async<B>, ...., z: Async<Z>): Async<Z>
 
 Do those tasks sequentially in asynchronous. Example:
 
@@ -162,7 +153,7 @@ This prints "Hello, " a seconds later and "World!" prints two seconds later.
 
 #### parallel
 
-    function parallel(a: Async<A>, b: Async<B>, ...., z: Async<Z>): Async<void>
+    parallel(a: Async<A>, b: Async<B>, ...., z: Async<Z>): Async<void>
 
 Do tasks in parallel. Return values are discard. If you need to the return value, you can `cache` function.
 
@@ -175,24 +166,52 @@ Do tasks in parallel. Return values are discard. If you need to the return value
 
 This code begin both of XHR requests at the same time. In second evaluation of `hoge` and `piyo`, it does't request and returns cached value.
 
+----
 
+#### fastest
+
+    fastest(a: Async<T>, b: Async<T>, ...., z: Async<T>): Async<T>
+
+Do tasks in parallel but finish when at least one task finished.
+
+----
+
+#### when
+
+    when(x: Async<boolean>, ifthen: Async<T>, ifelse?: Async<T>): Async<T> 
+
+if-then-else control flow.
+
+----
+
+#### wait
+
+    wait(seconds: Async<number>): Async<void>;
+    wait(seconds:       number ): Async<void>;    
+
+Wait in the specified time span. **The parameter is in seconds, not milliseconds**.
 
 ----
 
 #### run
 
-    function run(a: Async<A>, b: Async<B>, ..., z: Async<Z>): void
+    run(a: Async<A>, b: Async<B>, ..., z: Async<Z>): void
 
 Begin a asynchronous task in effect. Those tasks of parameters executes sequentially like `series` function. You need to use this function at least once in your code.
 
 ----
 
+### Error Handling
+
+----
+
 #### fail
 
-    function fail(): Async<void>
+    fail(): Async<void>
 
 Cause a failure state. Failure state spreads to upper level of calling stack. If Failure state reaches the top level(`masync.run`), an error is thrown. You can't send a Error object with `fail` function. You should focus **where the error caused** but **what is the error**.
 
+This function doesn't change any state of a Async object. It changes only flow.
 
 
 Example:
@@ -209,7 +228,7 @@ It will prints "before" and throws error. "after" will not be printed.
 
 #### recover
 
-    function recover(defaultValue: Async<T>, x: Async<T>): Async<T>
+    recover(defaultValue: Async<T>, x: Async<T>): Async<T>
 
 Recover a failure state.
 
@@ -221,6 +240,15 @@ Recover a failure state.
     masync.run(
         masync.log(masync.recover(20, failureTask))   // prints "20"
     );
+
+
+----
+
+#### capture
+
+    capture(xs: Async<T>, callback: (message?: string)=>T): Async<T>
+
+Capture a failure state and call the callback. 
 
 ----
 
@@ -308,7 +336,7 @@ Cache the return value of the Async object.
 
 ----
 
-### Casting
+### Type Conversion
 
 ----
 
@@ -316,11 +344,15 @@ Cache the return value of the Async object.
 
     resolve(promise: Promise<T>): Async<T>
 
+Converts a promise into a Async object. It's the inverse function of `promise`.
+
 ----
 
 #### promise
 
     promise(a: Async<T>): Promise<T>
+
+Converts a Async object into a promise. It's the inverse function of `resolve`.
 
 ----
 
@@ -328,7 +360,7 @@ Cache the return value of the Async object.
 
     wrap(f: (a: A, ..., y: Y, callback: (err: Error, z: Z)=>void)=>void): (a: Async<A>, ..., y: Async<Y>) => Async<Z>
 
-Converts a Node-style asynchronous function into a Async function.
+Converts a Node-style asynchronous function into a Async function. It's the inverse function of `peel`.
 
 ----
 
@@ -336,7 +368,7 @@ Converts a Node-style asynchronous function into a Async function.
 
     peel(f: (a: Async<A>, ..., y: Async<Y>)=>Async<Z>): (a: A, ..., y: Y, (err: Error, z: Z) => void) => void ;
 
-Converts a Async function into a Node-style asynchronous function.
+Converts a Async function into a Node-style asynchronous function. It's the inverse function of `wrap`.
 
 ----
 
@@ -399,7 +431,7 @@ Don't confuse, `wait1second` is Async task but `wait1second(s, f)` is *not*. Asy
 
     wait1second(function(result){}, function(){});
 
-Execute it. You will got a message "Hello, world!" from your first asynchronous task in your console. It's all about the asynchronous framework of masync. You can combine those your own task with other tasks by masync functions. For example,
+Execute it. You will got a message "Hello, world!" from your first asynchronous task in your console. It's all about the asynchronous framework of masync. You can combine those your own task with other tasks by masync functions. You can use `masync.run` instead of last example as below:
 
     masync.run(wait1second);
 

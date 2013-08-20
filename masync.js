@@ -143,8 +143,8 @@ var masync;
             xs[_i] = arguments[_i + 0];
         }
         series.apply(undefined, xs)(function () {
-        }, function () {
-            throw new Error();
+        }, function (message) {
+            throw new Error(message);
         });
     }
     masync.run = run;
@@ -190,9 +190,9 @@ var masync;
     masync.eject = eject;
 
     // error handling ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    function fail() {
+    function fail(message) {
         return function (succ, fail) {
-            fail();
+            fail(message);
         };
     }
     masync.fail = fail;
@@ -211,8 +211,8 @@ var masync;
 
     function capture(xs, callback) {
         return function (succ, fail) {
-            xs(succ, function () {
-                succ(callback());
+            xs(succ, function (message) {
+                succ(callback(message));
             });
         };
     }
@@ -300,83 +300,17 @@ var masync;
     }
     masync.repeat = repeat;
 
-    function wait(milliseconds) {
-        milliseconds = typeof (milliseconds) === "number" ? pure(milliseconds) : milliseconds;
+    function wait(seconds) {
+        seconds = typeof (seconds) === "number" ? pure(seconds) : seconds;
         return function (succ, fail) {
-            milliseconds(function (result) {
+            seconds(function (result) {
                 window.setTimeout(function () {
                     succ();
-                }, result);
+                }, 1000 * result);
             }, fail);
         };
     }
     masync.wait = wait;
-
-    function setTimeout(a, milliseconds) {
-        milliseconds = typeof (milliseconds) === "number" ? pure(milliseconds) : milliseconds;
-        return function (succ, fail) {
-            milliseconds(function (t) {
-                succ(window.setTimeout(function () {
-                    run(a);
-                }, t));
-            }, fail);
-        };
-    }
-    masync.setTimeout = setTimeout;
-
-    function clearTimeout(timerId) {
-        timerId = typeof (timerId) === "number" ? pure(timerId) : timerId;
-        return function (succ, fail) {
-            timerId(function (t) {
-                window.clearTimeout(t);
-                succ();
-            }, fail);
-        };
-    }
-    masync.clearTimeout = clearTimeout;
-
-    function setInterval(a, milliseconds) {
-        milliseconds = typeof (milliseconds) === "number" ? pure(milliseconds) : milliseconds;
-        return function (succ, fail) {
-            milliseconds(function (t) {
-                succ(window.setInterval(function () {
-                    run(a);
-                }, t));
-            }, fail);
-        };
-    }
-    masync.setInterval = setInterval;
-
-    function clearInterval(timerId) {
-        timerId = typeof (timerId) === "number" ? pure(timerId) : timerId;
-        return function (succ, fail) {
-            timerId(function (t) {
-                window.clearInterval(t);
-                succ();
-            }, fail);
-        };
-    }
-    masync.clearInterval = clearInterval;
-
-    function requestAnimationFrame(a) {
-        return function (succ, fail) {
-            succ(window.requestAnimationFrame(function () {
-                run(a);
-            }));
-        };
-    }
-    masync.requestAnimationFrame = requestAnimationFrame;
-
-    function cancelAnimationFrame(timerId) {
-        timerId = typeof (timerId) === "number" ? pure(timerId) : timerId;
-        return function (succ, fail) {
-            timerId(function (t) {
-                window.cancelAnimationFrame(t);
-                succ();
-            }, fail);
-        };
-    }
-    masync.cancelAnimationFrame = cancelAnimationFrame;
 
     function log(message) {
         return fmap(console.log.bind(console), _pure_(message));
@@ -575,8 +509,9 @@ var masync;
                 xhr.onload = function () {
                     succ(xhr.responseText);
                 };
-                xhr.onerror = function () {
-                    fail();
+                xhr.onerror = function (e) {
+                    e.preventDefault();
+                    fail("masync.get: " + e.toString());
                 };
                 xhr.open("GET", result);
                 if (!chached) {
