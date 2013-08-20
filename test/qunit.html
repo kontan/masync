@@ -12,5 +12,16 @@
         <script src="jquery-2.0.3.js"></script>
         <script src="../masync.js"></script>
         <script src="test.js"></script>
+        <script type="application/javascript;version=1.7">
+            function fakeGet(url) {
+                return masync.series(masync.wait(100), masync.pure("[Content of " + url + "]"));
+            }
+
+            var gen = (function () {
+                var text = yield masync.generate(gen, masync.pure("hoge.txt"));
+                if(text !== "[Content of hoge.txt]") throw new Error();
+            })();
+            gen.next();
+        </script>
     </body>
 </html>

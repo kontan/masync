@@ -37,6 +37,13 @@ module masync.tests {
         });
     }
 
+    function fakeGet(url: string): Async<string> {
+        return masync.series(
+            masync.wait(100),
+            masync.pure("[Content of " + url + "]")
+        );
+    }
+
     //  tests cases ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
     module array {
@@ -137,17 +144,17 @@ module masync.tests {
     module promise {
         module from {
             var ad = masync.strcat(
-                masync.fromPromise(jQuery.get("a.txt")),   
+                masync.resolve(jQuery.get("a.txt")),   
                 masync.get("d.txt")
             );
             masync.run(
-                check(ad, "ad", "fromPromise")
+                check(ad, "ad", "resolve")
             );
         }
 
         module to {
-            masync.toPromise(masync.get("b.txt")).then((data)=>{
-                test("toPromise", ()=>{
+            masync.promise(masync.get("b.txt")).then((data)=>{
+                test("promise", ()=>{
                     ok(data === "b");
                 });
             });

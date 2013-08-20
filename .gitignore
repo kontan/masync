@@ -218,3 +218,5 @@ pip-log.txt
 
 *.bat
 *.js
+
+!masync.js

@@ -604,15 +604,39 @@ module masync {
         }
     }
 
+    // generators integration ///////////////////////////////////////////////////////////////////////////////
+
+    
+
+    export function generate<T>(generator: Generator, a: Async<T>): Yieldable<T> {
+        var value: T;
+        a(
+            (t: T)=>{
+                setTimeout(()=>{ 
+                    try{
+                        generator.send(t);
+                    }catch(e){
+                        if (! (e instanceof StopIteration)) throw e;
+                    } 
+                }, 0);
+            }, 
+            ()=>{ throw new Error(); }
+        );
+        return ()=>value;
+    }
+
+
+
+
     // jquery integration ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    export function fromPromise<T>(promise: jQuery.Promise<T>): Async<T> {
+    export function resolve<T>(promise: jQuery.Promise<T>): Async<T> {
         return function(succ: (t: T)=>void, fail: ()=>void){
             jQuery.when(promise).then((t: T)=>succ(t)).fail(fail);
         }
     }
 
-    export function toPromise<T>(async: Async<T>): jQuery.Promise<T> {
+    export function promise<T>(async: Async<T>): jQuery.Promise<T> {
         return new jQuery.Deferred<T>((def: jQuery.Deferred<T>)=>{
             async((t: T)=>def.resolve(t), ()=>def.reject());
         }).promise();
@@ -649,9 +673,9 @@ module masync {
 
 
 
-    export function liftNode<A,Z>  (f: (a: A,       g: (err: Error, data: Z)=>void)=>void): (a: Async<A>             )=>Async<Z>;
-    export function liftNode<A,B,Z>(f: (a: A, b: B, g: (err: Error, data: Z)=>void)=>void): (a: Async<A>, b: Async<B>)=>Async<Z>;
-    export function liftNode<Z>(f: Function): any {
+    export function wrap<A,Z>  (f: (a: A,       g: (err: Error, data: Z)=>void)=>void): (a: Async<A>             )=>Async<Z>;
+    export function wrap<A,B,Z>(f: (a: A, b: B, g: (err: Error, data: Z)=>void)=>void): (a: Async<A>, b: Async<B>)=>Async<Z>;
+    export function wrap<Z>(f: Function): any {
         return ()=>{
             var args = Array.prototype.slice.call(arguments);
             return function(succ: (t: Z)=>void, fail: ()=>void){
@@ -673,12 +697,28 @@ module masync {
         export function readFile(fileName: string,        options?: ReadFileOptions): Async<Buffer>;
         export function readFile(fileName: any,           options?: ReadFileOptions): Async<Buffer> {
             var fs = require("fs");
-            return liftNode<string,ReadFileOptions,string>(fs.readFile.bind(fs))(_pure_(fileName), pure(options));
+            return wrap<string,ReadFileOptions,string>(fs.readFile.bind(fs))(_pure_(fileName), pure(options));
         }
     }
   
 }
 
+
+
+interface Generator {
+    next(): any;
+    send(v: any): any;
+}
+
+declare class StopIteration {
+
+}
+
+interface Yieldable<T> {
+    (): T;
+}
+
+declare function yield<T>(y: Yieldable<T>): T;
 
 module jQuery {
 
