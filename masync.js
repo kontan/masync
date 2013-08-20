@@ -525,14 +525,32 @@ var masync;
     }
     masync.get = get;
 
-    function getImage(url) {
+    function loadScript(url) {
+        url = _pure_(url);
         return function (succ, fail) {
-            var img = new Image();
-            img.src = url;
-            img.addEventListener("load", function () {
-                succ(img);
-            });
-            img.addEventListener("error", fail);
+            url(function (_url) {
+                var script = document.createElement("script");
+                script.src = _url;
+                script.addEventListener("load", function () {
+                    succ(script);
+                });
+                script.addEventListener("error", fail);
+            }, fail);
+        };
+    }
+    masync.loadScript = loadScript;
+
+    function getImage(url) {
+        url = _pure_(url);
+        return function (succ, fail) {
+            url(function (_url) {
+                var img = new Image();
+                img.src = url;
+                img.addEventListener("load", function () {
+                    succ(img);
+                });
+                img.addEventListener("error", fail);
+            }, fail);
         };
     }
     masync.getImage = getImage;

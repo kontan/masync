@@ -231,7 +231,7 @@ module masync.tests {
 
     module worker {
         masync.run(
-            check("fork", masync.worker("worker.js", masync.pure(10)), 20)
+            check("worker", masync.worker("worker.js", masync.pure(10)), 20)
         );
     }
 

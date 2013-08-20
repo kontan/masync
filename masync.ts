@@ -545,12 +545,31 @@ module masync {
         }
     }
 
-    export function getImage(url: string): Async<HTMLImageElement> {
+    export function loadScript(url: Async<string>): Async<HTMLScriptElement> ;
+    export function loadScript(url:       string ): Async<HTMLScriptElement> ;
+    export function loadScript(url:          any ): Async<HTMLScriptElement> {
+        url = _pure_(url);
+        return (succ: (elem: HTMLScriptElement)=>void, fail: ()=>void)=>{
+            url(_url=>{
+                var script: HTMLScriptElement = document.createElement("script");
+                script.src = _url;
+                script.addEventListener("load", function(){ succ(script); });
+                script.addEventListener("error", fail);
+            }, fail);
+        }
+    }
+
+    export function getImage(url: Async<string>): Async<HTMLImageElement> ;
+    export function getImage(url:       string ): Async<HTMLImageElement> ;
+    export function getImage(url:         any  ): Async<HTMLImageElement> {
+        url = _pure_(url);
         return function(succ: (img: HTMLImageElement)=>void, fail: ()=>void){
-            var img = new Image();
-            img.src = url;
-            img.addEventListener("load", function(){ succ(img); });
-            img.addEventListener("error", fail);
+            url(_url=>{
+                var img = new Image();
+                img.src = url;
+                img.addEventListener("load", function(){ succ(img); });
+                img.addEventListener("error", fail);
+            }, fail);
         }
     }
 

@@ -26,35 +26,41 @@ Let's see a first example. Create a HTML file that has following codes.
 
 Create a new tab and open JavaScript developer's console. Then drag and drop the HTML file to the empty tab to execute the code. At first you will see "Hello, " in your console, then you will get "asynchronous world!" **three seconds later**. `masync.wait` stops execution in the specified milliseconds. `masync.log` prints a text like `console.log` in console. `masync.run` begin those tasks sequentially. However, don't mistake asynchronous for synchronous. **These codes run in asynchronous.**
 
-Here's next example. `masync.wget` send XMLHttpRequest and return the data **in asynchronous**. You can pass the result data to `masync.log` directly. You don't need to use your callback function to finish the task. The following code requests *first.txt* and prints contents of the text file, then requests *second.txt* and print it in console. It's looks like synchronous, but asynchronous.
+Here's next example. `masync.get` send XMLHttpRequest and return the data **in asynchronous**. You can pass the result data to `masync.log` directly. You don't need to use your callback function to finish the task. The following code requests *first.txt* and prints contents of the text file, then requests *second.txt* and print it in console. It's looks like synchronous, but asynchronous.
 
     masync.run(
-        masync.log(masync.wget("first.txt")),
-        masync.log(masync.wget("second.txt"))        
+        masync.log(masync.get("first.txt")),
+        masync.log(masync.get("second.txt"))        
     );
 
 If you want to process those tasks in parallel, you can use `parallel` function as below:
 
     masync.run(
         masync.parallel(
-            masync.log(masync.wget("first.txt")),
-            masync.log(masync.wget("second.txt"))
+            masync.log(masync.get("first.txt")),
+            masync.log(masync.get("second.txt"))
         )
     );
 
 Both of requests begin in parallel. If *first.txt* is much larger than *seconds.txt*, you will see the content of *second.txt* in advance of *first.txt* in the console. You can combine parallel and sequential tasks at will.
 
-Most of asynchronous object are stateless. It means you can reuse a asynchronous object in a variety of positions all you want.
+Most of asynchronous objects are **stateless**. It means you can reuse a asynchronous object in a variety of positions all you want.
 
-    var x = masync.log("Hey!");
-    masync.run(x);
-    masync.run(x);
+    var hey = masync.log("Hey!");
+    masync.run(
+        hey,
+        masync.wait(1),
+        hey,
+        masync.wait(0.5),
+        hey
+    );
 
-This code prints "Hey!" twice in console. You are not a cause for concern about how many event handlers the asynchronous object has. 
+This code prints "Hey!" thrice in console. You are not a cause for concern about how many event handlers the asynchronous object has. 
 
 You can apply a asynchronous function to asynchronous data. The following code prints "HELLO!".
-
-    masync.run(masync.log(masync.toUpperCase("Hello!")));
+    
+    var hello = masync.pure("Hello!");
+    masync.run(masync.log(masync.toUpperCase(hello)));
 
 A framework of masync is based on [Monad](http://www.haskell.org/haskellwiki/All_About_Monads) and masync is inspired by IO Monad in Haskell. This framework is very simple, though, thus flexible and powerful. 
 
@@ -268,12 +274,26 @@ Prints a string in console. This is a lifted function of `console.log`.
 
 #### get
 
-    wget(url: Async<string>): Async<string>
-    wget(url:       string ): Async<string>
+    get(url: Async<string>): Async<string>
+    get(url:       string ): Async<string>
 
 Send XMLHttpRequest in *GET* method and return the data.
 
     masync.run(masync.log(masync.get("foo.txt")));     // prints the content of foo.txt
+
+----
+
+#### getImage
+
+    getImage(url: Async<string>): Async<HTMLImageElement>
+    getImage(url:       string ): Async<HTMLImageElement>
+
+----
+    
+#### loadScript
+
+    loadScript(url: Async<string>): Async<HTMLScriptElement>
+    loadScript(url:       string ): Async<HTMLScriptElement>
 
 ----
 
@@ -336,7 +356,7 @@ Cache the return value of the Async object.
 
 ----
 
-### Type Conversion
+### Interaction
 
 ----
 
@@ -390,6 +410,15 @@ Converts a Async object into *a yieldable object*. For example,
 
 ----
 
+#### worker
+
+    worker(path: Async<string>, arg: Async<T>): Async<S>
+    worker(path:       string , arg: Async<T>): Async<S>
+
+Create Web Worker, post a message and recieve a result.
+
+----
+
 ### Lifted Functions
 
 ----
@@ -399,7 +428,6 @@ I'm planning to provide following functions as asynchronous functions in `masync
 * string: toString, strcat, toUpperCase, toLowerCase, 
 * number: add, sub, mul, div, abs, max, min, parseFloat, parseInteger
 * boolean: and, or, not, xor
-* setTimeout, clearTimeout, setInterval, clearInterval
 
 
 
