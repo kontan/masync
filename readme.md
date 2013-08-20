@@ -15,7 +15,7 @@ Statically-typed Monadic Asynchronous Control Flow Library for JavaScript/TypeSc
 
 Let's see a first example. Create a HTML file that has following codes. 
 
-    <script type="text/javascript" src="masync.js"></script>
+    <script type="text/javascript" src="https://rawgithub.com/kontan/masync/master/masync.js"></script>
     <script type="text/javascript">
     masync.run(
         masync.log("Hello, "),
