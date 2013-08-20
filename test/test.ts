@@ -29,7 +29,7 @@ module masync.tests {
 
     // utils ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    function check<T>(value: Async<T>, reference: T, name: string, message?: string): masync.Async<void> {
+    function check<T>(name: string, value: Async<T>, reference: T, message?: string): masync.Async<void> {
         return masync.eject(value, (x)=>{
             test(name, ()=>{
                 ok(x == reference, message);
@@ -46,18 +46,76 @@ module masync.tests {
 
     //  tests cases ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    module primitives {
+
+        var f = (x)=>pure(x*2);
+        var g = (x)=>pure(x+10);
+        var x = 42;
+        var m = pure("42");
+
+        masync.run( 
+
+            check("equals true", masync.equals(
+                masync.pure(20),
+                masync.pure(20)
+            ), true),
+
+            check("equals false", masync.equals(
+                masync.pure(20),
+                masync.pure(30)
+            ), false),
+
+            check("notEquals true", masync.notEquals(
+                masync.pure(20),
+                masync.pure(20)
+            ), false),
+
+            check("notEquals false", masync.notEquals(
+                masync.pure(20),
+                masync.pure(30)
+            ), true),
+
+            check("fmap", masync.equals(
+                masync.fmap(x=>x*2, masync.pure(10)),
+                masync.pure(20)
+            ), true),
+
+            // (return x) >>= f == f x
+            check("monad law 1", masync.equals(
+                masync.bind(masync.pure(x), f), 
+                f(x)
+            ), true),
+
+            // m >>= return == m
+            check("monad law 2", masync.equals(
+                masync.bind(m, masync.pure), 
+                m
+            ), true),  
+
+            // (m >>= f) >>= g  ==  m >>= (\x -> (f x >>= g))
+            check("monad law 3", masync.equals(
+                masync.bind(masync.bind(m, f), g), 
+                masync.bind(m, x=>masync.bind(f(x), g))
+            ), true)
+        );
+    }
+
     module array {
         masync.run(    
-            check(masync.foldl(masync.pure((x,y)=>x+y), masync.pure(""), masync.array(
-                masync.get("a.txt"),
-                masync.toString(masync.pure("b")),
-                masync.pure("c")
-            )), "abc", "foldl string"),
-            check(masync.foldl(masync.pure((x,y)=>x+y), masync.pure(0), masync.array(
-                masync.pure(1),
-                masync.pure(2),
-                masync.pure(3)
-            )), 6, "foldl number")
+            check("foldl string",
+                masync.foldl(masync.pure((x,y)=>x+y), masync.pure(""), masync.array(
+                    masync.get("a.txt"),
+                    masync.toString(masync.pure("b")),
+                    masync.pure("c")
+                )
+            ), "abc"),
+            check("foldl number",
+                masync.foldl(masync.pure((x,y)=>x+y), masync.pure(0), masync.array(
+                    masync.pure(1),
+                    masync.pure(2),
+                    masync.pure(3)
+                )
+            ), 6)
         );
         
     }    
@@ -73,7 +131,7 @@ module masync.tests {
                 masync.pure(10)
             )
         );
-        masync.run(check(v, 20, "recover"));
+        masync.run(check("recover", v, 20));
 
         function findFile(path: string){
             return masync.recover("Error: No such file: " + path,
@@ -83,8 +141,12 @@ module masync.tests {
 
 
         masync.run(
-            check(findFile("a.txt"), "a", "recover: file open success"),
-            check(findFile("noexistfile.txt"), "Error: No such file: noexistfile.txt", "recover: file open fail")
+            check("recover: file open success", 
+                findFile("a.txt"), 
+            "a"),
+            check("recover: file open fail",
+                findFile("noexistfile.txt"), 
+            "Error: No such file: noexistfile.txt")
         );
 
         masync.run(masync.log(findFile("a.txt")));
@@ -92,10 +154,10 @@ module masync.tests {
 
 
         masync.run(
-            check(
+            check("recover with other file",
                 masync.recover(masync.get("a.txt"),
                     masync.get("noexistfile.txt")
-                ), "a", "recover with other file"
+                ), "a"
             )
         );        
     }
@@ -106,7 +168,7 @@ module masync.tests {
         var b = masync.get("b.txt");
         masync.run(
             masync.log("hoge"),
-            check(masync.strcat(a, b), "ab", "parallel fileopen")
+            check("parallel fileopen", masync.strcat(a, b), "ab")
         );
 
 
@@ -115,7 +177,7 @@ module masync.tests {
         masync.run(
             c,
             d,
-            check(masync.strcat(c, d), "cd", "sequential fileopen")
+            check("sequential fileopen", masync.strcat(c, d), "cd")
         );
     }
 
@@ -133,11 +195,11 @@ module masync.tests {
         var d = getAndLog("d.txt", 300);
 
         masync.run(
-            check(masync.strcat(a, b, c, d), "abcd", "fileopen")
+            check("fileopen", masync.strcat(a, b, c, d), "abcd")
         );
 
         masync.run(
-            check(masync.fastest(a, b, c, d), "c", "fastest")
+            check("fastest", masync.fastest(a, b, c, d), "c")
         );        
     }
 
@@ -148,7 +210,7 @@ module masync.tests {
                 masync.get("d.txt")
             );
             masync.run(
-                check(ad, "ad", "resolve")
+                check("resolve", ad, "ad")
             );
         }
 
@@ -157,17 +219,17 @@ module masync.tests {
                 test("promise", ()=>{
                     ok(data === "b");
                 });
-            });
+            }, ()=>{});
         }
     }
 
     module worker {
         masync.run(
-            check(masync.worker("worker.js", masync.pure(10)), 20, "fork")
+            check("fork", masync.worker("worker.js", masync.pure(10)), 20)
         );
     }
 
     module node {
-        masync.run(check(masync.fs.readFile("a.txt"), "a", "node readfile"));
+        masync.run(check("node readfile", masync.fs.readFile("a.txt"), "a"));
     }
 }

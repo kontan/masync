@@ -4,7 +4,7 @@
 # masync
 
 
-Statically-typed Monadic Asynchronous Flow Control Library for JavaScript/TypeScript/AltJSs
+Statically-typed Monadic Asynchronous Control Flow Library for JavaScript/TypeScript/AltJSs
 
 
 
@@ -77,13 +77,25 @@ Apply a regular function `f` to a Async object `a`. If the parameter function ha
 
 #### ap
 
-    function ap(f: Async<(a: A) => B>, a: Async<A>) => Async<B>
+    ap(f: Async<(a: A) => B>, a: Async<A>) => Async<B>
 
 Apply a Async function to a Async object. You will not use it.
 
 ----
 
-### Flow Control
+#### bind
+
+    bind(x: Async<A>, f: (a: A)=>Async<B>) => Async<B>
+
+Bind a Async object and a function. The function `f` receives a value from `x`. Example:
+
+    masync.run(
+        masync.bind(masync.get("hoge"), masync.log)
+    )
+
+----
+
+### Control Flow
 
 ------------
 
@@ -319,7 +331,7 @@ Don't confuse, `wait1000` is Async task but `wait1000(s, f)` is *not*. Async tas
 
 Execute it. You will got a message "Hello, world!" from your first asynchronous task in your console. It's all about the asynchronous framework of masync. You can combine those your own task with other tasks by masync functions.
 
-### Design Concept
+## Design Concept
 
 * Statically-typed
 * Function-oriented
@@ -327,11 +339,11 @@ Execute it. You will got a message "Hello, world!" from your first asynchronous 
 * `new` free
 * Stateless 
 
-### Licensing
+## Licensing
 
 MIT!
 
-### Versions
+## Versions
 
 * 0.1.0 (2013/8/16)
 

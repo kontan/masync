@@ -33,6 +33,11 @@
 // THE SOFTWARE.
 var masync;
 (function (masync) {
+    function id(x) {
+        return x;
+    }
+    masync.id = id;
+
     // Functor //
     function fmap(f, x) {
         return ap(pure(f), x);
@@ -603,9 +608,9 @@ var masync;
     masync.getImage = getImage;
 
     // generators integration ///////////////////////////////////////////////////////////////////////////////
-    function generate(generator, a) {
+    function generate(generator, x) {
         var value;
-        a(function (t) {
+        x(function (t) {
             setTimeout(function () {
                 try  {
                     generator.send(t);
@@ -625,21 +630,13 @@ var masync;
 
     // jquery integration ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     function resolve(promise) {
-        return function (succ, fail) {
-            jQuery.when(promise).then(function (t) {
-                return succ(t);
-            }).fail(fail);
-        };
+        return promise.then.bind(promise);
     }
     masync.resolve = resolve;
 
     function promise(async) {
         return new jQuery.Deferred(function (def) {
-            async(function (t) {
-                return def.resolve(t);
-            }, function () {
-                return def.reject();
-            });
+            async(def.resolve.bind(def), def.reject.bind(def));
         }).promise();
     }
     masync.promise = promise;
@@ -672,6 +669,13 @@ var masync;
         };
     }
     masync.wrap = wrap;
+
+    function peel(f) {
+        return function () {
+            throw new Error();
+        };
+    }
+    masync.peel = peel;
 
     (function (fs) {
         function readFile(fileName, options) {

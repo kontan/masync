@@ -606,11 +606,9 @@ module masync {
 
     // generators integration ///////////////////////////////////////////////////////////////////////////////
 
-    
-
-    export function generate<T>(generator: Generator, a: Async<T>): Yieldable<T> {
+    export function generate<T>(generator: Generator, x: Async<T>): Yieldable<T> {
         var value: T;
-        a(
+        x(
             (t: T)=>{
                 setTimeout(()=>{ 
                     try{
@@ -625,20 +623,15 @@ module masync {
         return ()=>value;
     }
 
-
-
-
     // jquery integration ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     export function resolve<T>(promise: jQuery.Promise<T>): Async<T> {
-        return function(succ: (t: T)=>void, fail: ()=>void){
-            jQuery.when(promise).then((t: T)=>succ(t)).fail(fail);
-        }
+        return promise.then.bind(promise);
     }
 
     export function promise<T>(async: Async<T>): jQuery.Promise<T> {
         return new jQuery.Deferred<T>((def: jQuery.Deferred<T>)=>{
-            async((t: T)=>def.resolve(t), ()=>def.reject());
+            async(def.resolve.bind(def), def.reject.bind(def));
         }).promise();
     }
 
@@ -658,7 +651,7 @@ module masync {
     export function worker<T,S>(scriptPath:       string                ): Async<S> ;
     export function worker<T,S>(scriptPath: any          , arg?: any    ): Async<S> {
         function _fork<T,S>(scriptPath: string, _arg: T): Async<S> {
-            return function(succ: (t: S)=>void, fail: ()=>void){
+            return (succ: (t: S)=>void, fail: ()=>void)=>{
                 var worker = new Worker(scriptPath);
                 worker.onmessage = (e)=>{ succ(e.data); };
                 worker.postMessage(_arg);
@@ -671,19 +664,35 @@ module masync {
 
     declare function require(moduleName: string): any;
 
+    export interface NFunc1<A,  Z>   { (a: A,             z: (err: Error, data: Z)=>void): void; }
+    export interface NFunc2<A,B,Z>   { (a: A, b: B,       z: (err: Error, data: Z)=>void): void; }
+    export interface NFunc3<A,B,C,Z> { (a: A, b: B, c: C, z: (err: Error, data: Z)=>void): void; }
 
+    export interface AFunc1<A,    Z>{ (a: Async<A>                          ): Async<Z>; }
+    export interface AFunc2<A,B,  Z>{ (a: Async<A>, b: Async<B>             ): Async<Z>; }
+    export interface AFunc3<A,B,C,Z>{ (a: Async<A>, b: Async<B>, c: Async<C>): Async<Z>; }
 
-    export function wrap<A,Z>  (f: (a: A,       g: (err: Error, data: Z)=>void)=>void): (a: Async<A>             )=>Async<Z>;
-    export function wrap<A,B,Z>(f: (a: A, b: B, g: (err: Error, data: Z)=>void)=>void): (a: Async<A>, b: Async<B>)=>Async<Z>;
+    export function wrap<A,    Z>(f: NFunc1<A,    Z>): AFunc1<A,    Z>;
+    export function wrap<A,B,  Z>(f: NFunc2<A,B,  Z>): AFunc2<A,B,  Z>;
+    export function wrap<A,B,C,Z>(f: NFunc3<A,B,C,Z>): AFunc3<A,B,C,Z>;
     export function wrap<Z>(f: Function): any {
         return ()=>{
             var args = Array.prototype.slice.call(arguments);
-            return function(succ: (t: Z)=>void, fail: ()=>void){
+            return (succ: (t: Z)=>void, fail: ()=>void)=>{
                 amap(args)(_args=>{  
                     _args.push((err: Error, data: Z)=> err ? fail() : succ(data));    // lift a function and add the function as callback
                     f.apply(undefined, _args);
                 }, fail);
             };
+        };
+    }
+
+    export function peel<A,    Z>(f: AFunc1<A,    Z>): NFunc1<A,    Z>;
+    export function peel<A,B,  Z>(f: AFunc2<A,B,  Z>): NFunc2<A,B,  Z>;
+    export function peel<A,B,C,Z>(f: AFunc3<A,B,C,Z>): NFunc3<A,B,C,Z>;
+    export function peel<Z>(f: Function): any {
+        return ()=>{
+            throw new Error(); // TODO
         };
     }
 
@@ -721,58 +730,20 @@ interface Yieldable<T> {
 declare function yield<T>(y: Yieldable<T>): T;
 
 module jQuery {
-
-    export declare function when<T>(...deferreds: GenericPromise<T>[]): Promise<T>;
-    export declare function when<T>(...deferreds: T[]): Promise<T>;
-
     export declare function get(url: string, data?: any, success?: any, dataType?: any): Promise;
     export declare function getJSON(url: string, data?: any, success?: any): Promise;
     export declare function getScript(url: string, success?: any): Promise;
 
-    export interface GenericPromise<T> {
-        then<U>(onFulfill: (value: T) => U,                 onReject?: (reason: any) => U                ): GenericPromise<U>;
-        then<U>(onFulfill: (value: T) => GenericPromise<U>, onReject?: (reason: any) => U                ): GenericPromise<U>;
-        then<U>(onFulfill: (value: T) => U,                 onReject?: (reason: any) => GenericPromise<U>): GenericPromise<U>;
-        then<U>(onFulfill: (value: T) => GenericPromise<U>, onReject?: (reason: any) => GenericPromise<U>): GenericPromise<U>;
-    }
+    export declare function when<T>(promise: Promise<T>): Promise<T>;
 
     export interface Promise<T> {
-        always  (...alwaysCallbacks:   any[]): Promise<T>;
-        done    (...doneCallbacks:     any[]): Promise<T>;
-        fail    (...failCallbacks:     any[]): Promise<T>;
-        progress(...progressCallbacks: any[]): Promise<T>;
-
-        then<U>(onFulfill: (value: T) => U,                 onReject?: (...reasons: any[]) => U,                 onProgress?: (...progression: any[]) => any): Promise<U>;
-        then<U>(onFulfill: (value: T) => GenericPromise<U>, onReject?: (...reasons: any[]) => U,                 onProgress?: (...progression: any[]) => any): Promise<U>;
-        then<U>(onFulfill: (value: T) => U,                 onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
-        then<U>(onFulfill: (value: T) => GenericPromise<U>, onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
+        then<S>(onFulfill: (value: T)=>S, onReject: ()=>void): Promise<S>;
     }
 
-    export declare class Deferred<T> implements Promise<T> {
-
+    export declare class Deferred<T> {
         constructor(beforeStart?: (deferred: Deferred<T>)=>any);
-
-        always     (...alwaysCallbacks:   any[] ): Deferred<T>;
-        done       (...doneCallbacks:     any[] ): Deferred<T>;
-        fail       (...failCallbacks:     any[] ): Deferred<T>;
-        progress   (...progressCallbacks: any[] ): Deferred<T>;
-
-        notify     (...args: any[]              ): Deferred<T>;
-        notifyWith (context: any, ...args: any[]): Deferred<T>;
-
-        reject     (...args: any[]): Deferred<T>;
-        rejectWith (context: any, ...args: any[]): Deferred<T>;
-
-        resolve    (val:     T                  ): Deferred<T>;
-        resolve    (...args: any[]              ): Deferred<T>;
-        resolveWith(context: any, ...args: any[]): Deferred<T>;
-        state(): string;
-
-        promise(target?: any): Promise<T>;
-
-        then<U>(onFulfill: (value: T) => U,                 onReject?: (...reasons: any[]) => U,                 onProgress?: (...progression: any[]) => any): Promise<U>;
-        then<U>(onFulfill: (value: T) => GenericPromise<U>, onReject?: (...reasons: any[]) => U,                 onProgress?: (...progression: any[]) => any): Promise<U>;
-        then<U>(onFulfill: (value: T) => U,                 onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
-        then<U>(onFulfill: (value: T) => GenericPromise<U>, onReject?: (...reasons: any[]) => GenericPromise<U>, onProgress?: (...progression: any[]) => any): Promise<U>;
+        reject(): Deferred<T>;
+        resolve(value: T): Deferred<T>;
+        promise(): Promise<T>;
     }
 }
