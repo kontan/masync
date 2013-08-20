@@ -19,7 +19,7 @@ Let's see a first example. Create a HTML file that has following codes.
     <script type="text/javascript">
     masync.run(
         masync.log("Hello, "),
-        masync.wait(3000),
+        masync.wait(3),
         masync.log("asynchronous world!")
     );
     </script>
@@ -42,9 +42,21 @@ If you want to process those tasks in parallel, you can use `parallel` function 
         )
     );
 
-Both of requests begin in parallel. If *first.txt* is much larger than *seconds.txt*, you will see the content of *second.txt* in advance of *first.txt* in the console.
+Both of requests begin in parallel. If *first.txt* is much larger than *seconds.txt*, you will see the content of *second.txt* in advance of *first.txt* in the console. You can combine parallel and sequential tasks at will.
 
-You can combine parallel and sequential tasks at will. You can apply a asynchronous function to asynchronous data and *Callback Hell* will be expelled. A framework of masync is based on [Monad](http://www.haskell.org/haskellwiki/All_About_Monads) and masync is inspired by IO Monad in Haskell. This framework is very simple, though, thus flexible and powerful. 
+Most of asynchronous object are stateless. It means you can reuse a asynchronous object in a variety of positions all you want.
+
+    var x = masync.log("Hey!");
+    masync.run(x);
+    masync.run(x);
+
+This code prints "Hey!" twice in console. You are not a cause for concern about how many event handlers the asynchronous object has. 
+
+You can apply a asynchronous function to asynchronous data. The following code prints "HELLO!".
+
+    masync.run(masync.log(masync.toUpperCase("Hello!")));
+
+*Callback Hells will be expelled*. A framework of masync is based on [Monad](http://www.haskell.org/haskellwiki/All_About_Monads) and masync is inspired by IO Monad in Haskell. This framework is very simple, though, thus flexible and powerful. 
 
 ## API Reference
 
@@ -118,10 +130,10 @@ Bind a Async object and a function. The function `f` receives a value from `x`. 
 
 #### wait
 
-    function wait(milliseconds: Async<number>): Async<void>;
-    function wait(milliseconds:       number ): Async<void>;    
+    function wait(seconds: Async<number>): Async<void>;
+    function wait(seconds:       number ): Async<void>;    
 
-Wait in the specified time span.
+Wait in the specified time span. **The parameter is in seconds, not milliseconds**.
 
 ----
 
@@ -134,11 +146,11 @@ Do those tasks sequentially in asynchronous. Example:
     maysync.run(
         masync.parallel(
             masync.series(
-                masync.wait(1000), 
+                masync.wait(1), 
                 masync.log("Hello, ")
             ),
             masync.series(
-                masync.wait(2000), 
+                masync.wait(2), 
                 masync.log("World!")
             )
         )
@@ -363,7 +375,7 @@ I'm planning to provide following functions as asynchronous functions in `masync
 
 ## How to implement your own Async objects?
 
-You need not any external libraries to implement your own Async object. Your task must have the following type signature:
+**You need not any external libraries to implement your own Async object.** Even if you don't use *masync.js*, you can write a Async object because a masync-style asynchronous object is very simple. Your Async task must have the following type signature:
 
     interface Async<T> {
         (succ: (t: T)=>void, fail: ()=>void): void;
@@ -371,9 +383,9 @@ You need not any external libraries to implement your own Async object. Your tas
 
 It means Async task is just a **function** that have two parameters: `succ` and `fail`. Those parameters are **function** too. When an other Async task needs to get a value from this Async object, this Async object is called. When your task finished it's own action successfully, the task call the `succ` function with the result, or call the `fail` function if the task failed. It's also known as *Continuation-passing style*.
 
-As first example, let't implements a simple Async object. The following function `wait1000` is a Async object. This task waits in a seconds then prints "Hellow, world!", and then returns "result".
+As first example, let't implements a simple Async object. The following function `wait1second` is a Async object. This task waits in a seconds then prints "Hellow, world!", and then returns "result".
 
-    function wait1000(succ, fail){
+    function wait1second(succ, fail){
         setTimeout(function(){ 
             console.log("Hello, world!");
             succ("result");
@@ -381,13 +393,17 @@ As first example, let't implements a simple Async object. The following function
     }
 
 
-Don't confuse, `wait1000` is Async task but `wait1000(s, f)` is *not*. Async task is a *function*. 
+Don't confuse, `wait1second` is Async task but `wait1second(s, f)` is *not*. Async task is a *function*. 
 
-`wait1000` have two parameters, `succ` and `fail`. An asynchronous functions will call those parameter functions when their asynchronous task is over or failed. `wait1000` also calls it when it finish it's own task. This task always success, but when your task fail, it must call `fail` function. You can always begin the task with calling the function with two parameters, `succ` and `fail`. Now you have no interest to the result of the task so you have to pass empty functions as parameters:
+`wait1second` have two parameters, `succ` and `fail`. An asynchronous functions will call those parameter functions when their asynchronous task is over or failed. `wait1second` also calls it when it finish it's own task. This task always success, but when your task fail, it must call `fail` function. You can always begin the task with calling the function with two parameters, `succ` and `fail`. Now you have no interest to the result of the task so you have to pass empty functions as parameters:
 
-    wait1000(function(result){}, function(){});
+    wait1second(function(result){}, function(){});
 
-Execute it. You will got a message "Hello, world!" from your first asynchronous task in your console. It's all about the asynchronous framework of masync. You can combine those your own task with other tasks by masync functions.
+Execute it. You will got a message "Hello, world!" from your first asynchronous task in your console. It's all about the asynchronous framework of masync. You can combine those your own task with other tasks by masync functions. For example,
+
+    masync.run(wait1second);
+
+This code is valid. If you run the script, you will get "Hello, world!" a seconds later in your console.
 
 ## Design Concept
 
@@ -396,6 +412,7 @@ Execute it. You will got a message "Hello, world!" from your first asynchronous 
 * `this` context independent
 * `new` free
 * Stateless 
+* Standalone but interactive with other library
 
 ## Licensing
 

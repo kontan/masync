@@ -372,66 +372,15 @@ module masync {
 
     /// Pauses the current context for a specified amount of time. 
     /// 指定した時間、現在のコンテキストの実行を中断します。
-    /// @param pmilliseconds The number of milliseconds the current context should be paused for.
-    export function wait(milliseconds: Async<number>): Async<void>;
-    export function wait(milliseconds: number       ): Async<void>;
-    export function wait(milliseconds: any          ): Async<void> {
-        milliseconds = typeof(milliseconds) === "number" ? pure(milliseconds) : milliseconds;
+    /// @param seconds The number of seconds the current context should be paused for.
+    export function wait(seconds: Async<number>): Async<void>;
+    export function wait(seconds: number       ): Async<void>;
+    export function wait(seconds: any          ): Async<void> {
+        seconds = typeof(seconds) === "number" ? pure(seconds) : seconds;
         return function(succ: ()=>void, fail: ()=>void){
-            milliseconds(function(result: number){
-                window.setTimeout(function(){ succ(); }, result);
+            seconds(function(result: number){
+                window.setTimeout(function(){ succ(); }, 1000 * result);
             }, fail);
-        }
-    }
-
-    export function setTimeout(a: Async<any>, milliseconds: Async<number>): Async<number>;
-    export function setTimeout(a: Async<any>, milliseconds: number       ): Async<number>;
-    export function setTimeout(a: Async<any>, milliseconds: any          ): Async<number> {
-        milliseconds = typeof(milliseconds) === "number" ? pure(milliseconds) : milliseconds;
-        return function(succ: (t: number)=>void, fail: ()=>void){
-            milliseconds(function(t: number){ succ(window.setTimeout(function(){ run(a); }, t)); }, fail);
-        }
-    }
-
-    export function clearTimeout(timerId: Async<number>): Async<void>;
-    export function clearTimeout(timerId: number       ): Async<void>;
-    export function clearTimeout(timerId: any          ): Async<void> {
-        timerId = typeof(timerId) === "number" ? pure(timerId) : timerId;
-        return function(succ: ()=>void, fail: ()=>void){
-            timerId(function(t: number){ window.clearTimeout(t); succ(); }, fail);
-        }
-    }
-
-    export function setInterval(a: Async<any>, milliseconds: Async<number>): Async<number>;
-    export function setInterval(a: Async<any>, milliseconds: number       ): Async<number>;
-    export function setInterval(a: Async<any>, milliseconds: any          ): Async<number> {
-        milliseconds = typeof(milliseconds) === "number" ? pure(milliseconds) : milliseconds;
-        return function(succ: (t: number)=>void, fail: ()=>void){
-            milliseconds(function(t: number){ succ(window.setInterval(function(){ run(a); }, t)); }, fail);
-        }
-    }
-
-    export function clearInterval(timerId: Async<number>): Async<void>;
-    export function clearInterval(timerId: number       ): Async<void>;
-    export function clearInterval(timerId: any          ): Async<void> {
-        timerId = typeof(timerId) === "number" ? pure(timerId) : timerId;
-        return function(succ: ()=>void, fail: ()=>void){
-            timerId(function(t: number){ window.clearInterval(t); succ(); }, fail);
-        }
-    }
-
-    export function requestAnimationFrame(a: Async<any>): Async<number> {
-        return function(succ: (t: number)=>void, fail: ()=>void){
-            succ(window.requestAnimationFrame(function(){ run(a); }));
-        }
-    }
-
-    export function cancelAnimationFrame(timerId: Async<number>): Async<void>;
-    export function cancelAnimationFrame(timerId: number       ): Async<void>;
-    export function cancelAnimationFrame(timerId: any          ): Async<void> {
-        timerId = typeof(timerId) === "number" ? pure(timerId) : timerId;
-        return function(succ: ()=>void, fail: ()=>void){
-            timerId(function(t: number){ window.cancelAnimationFrame(t); succ(); }, fail);
         }
     }
 
