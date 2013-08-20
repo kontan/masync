@@ -33,11 +33,6 @@
 // THE SOFTWARE.
 var masync;
 (function (masync) {
-    function id(x) {
-        return x;
-    }
-    masync.id = id;
-
     // Functor //
     function fmap(f, x) {
         return ap(pure(f), x);
@@ -87,7 +82,7 @@ var masync;
         return function () {
             var args = Array.prototype.slice.call(arguments);
             return function (succ, fail) {
-                amap(args)(function (_args) {
+                collect(args)(function (_args) {
                     return succ(f.apply(undefined, _args));
                 }, fail);
             };
@@ -99,7 +94,7 @@ var masync;
         return function () {
             var args = Array.prototype.slice.call(arguments);
             return function (succ, fail) {
-                amap(args)(function (_args) {
+                collect(args)(function (_args) {
                     f.apply(undefined, _args)(succ, fail);
                 }, fail);
             };
@@ -135,7 +130,7 @@ var masync;
         }
         var args = xs.slice(0);
         return function (succ, fail) {
-            amap(args)(function (_args) {
+            collect(args)(function (_args) {
                 return succ();
             }, fail);
         };
@@ -419,7 +414,7 @@ var masync;
         }
         return lift(function (ys) {
             return Math.max.apply(undefined, ys);
-        })(amap(xs));
+        })(collect(xs));
     }
     masync.max = max;
 
@@ -430,7 +425,7 @@ var masync;
         }
         return lift(function (ys) {
             return Math.min.apply(undefined, ys);
-        })(amap(xs));
+        })(collect(xs));
     }
     masync.min = min;
 
@@ -461,12 +456,12 @@ var masync;
         }
         return lift(function (ys) {
             return ys.join("");
-        })(amap(xs));
+        })(collect(xs));
     }
     masync.strcat = strcat;
 
     // array //
-    function amap(xs) {
+    function collect(xs) {
         return function (succ, fail) {
             var values = new Array(xs.length);
             var count = 0;
@@ -481,14 +476,14 @@ var masync;
             });
         };
     }
-    masync.amap = amap;
+    masync.collect = collect;
 
     function array() {
         var xs = [];
         for (var _i = 0; _i < (arguments.length - 0); _i++) {
             xs[_i] = arguments[_i + 0];
         }
-        return amap(xs);
+        return collect(xs);
     }
     masync.array = array;
 
@@ -522,7 +517,7 @@ var masync;
         }
         return lift(function (ys) {
             return [].concat(ys);
-        })(amap(xs));
+        })(collect(xs));
     }
     masync.concat = concat;
 
@@ -659,7 +654,7 @@ var masync;
         return function () {
             var args = Array.prototype.slice.call(arguments);
             return function (succ, fail) {
-                amap(args)(function (_args) {
+                collect(args)(function (_args) {
                     _args.push(function (err, data) {
                         return err ? fail() : succ(data);
                     });

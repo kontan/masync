@@ -100,7 +100,7 @@ module masync {
         return ()=>{
             var args: Async<any>[] = Array.prototype.slice.call(arguments);
             return (succ: (r: R)=>void, fail: ()=>void)=>{  
-                amap(args)(_args=>succ(f.apply(undefined, _args)), fail);
+                collect(args)(_args=>succ(f.apply(undefined, _args)), fail);
             };
         };
     }
@@ -135,7 +135,7 @@ module masync {
         return function(){
             var args: Async<any>[] = Array.prototype.slice.call(arguments);
             return function(succ: (r: R)=>void, fail: ()=>void){
-                amap(args)(_args=>{ f.apply(undefined, _args)(succ, fail); }, fail);
+                collect(args)(_args=>{ f.apply(undefined, _args)(succ, fail); }, fail);
             };
         };
     }
@@ -208,7 +208,7 @@ module masync {
     export function parallel(...xs: Async<any>[]): Async<void> {
         var args = xs.slice(0);
         return function(succ: ()=>void, fail: ()=>void){
-            amap(args)(_args=>succ(), fail);
+            collect(args)(_args=>succ(), fail);
         };
     }
 
@@ -465,11 +465,11 @@ module masync {
     // number //
 
     export function max(...xs: Async<number>[]): Async<number>{
-        return lift(ys=>Math.max.apply(undefined, ys))(amap(xs));
+        return lift(ys=>Math.max.apply(undefined, ys))(collect(xs));
     }
 
     export function min(...xs: Async<number>[]): Async<number>{
-        return lift(ys=>Math.min.apply(undefined, ys))(amap(xs));
+        return lift(ys=>Math.min.apply(undefined, ys))(collect(xs));
     }
 
     export function abs(x: Async<number>): Async<number>{
@@ -487,12 +487,12 @@ module masync {
     }
 
     export function strcat(...xs: Async<string>[]): Async<string> {
-        return lift((ys: string[])=>ys.join(""))(amap(xs));
+        return lift((ys: string[])=>ys.join(""))(collect(xs));
     }    
 
     // array //
 
-    export function amap<T>(xs: Async<T>[]): Async<T[]> {
+    export function collect<T>(xs: Async<T>[]): Async<T[]> {
         return (succ: (result: T[])=>void, fail: ()=>void)=>{
             var values: T[] = new Array<T>(xs.length);
             var count: number = 0;
@@ -509,7 +509,7 @@ module masync {
     }
 
     export function array<T>(...xs: Async<T>[]): Async<T[]> {
-        return amap(xs);
+        return collect(xs);
     }
 
     export function length(xs: Async<any[]>): Async<number> {
@@ -531,7 +531,7 @@ module masync {
     }    
 
     export function concat<T>(...xs: Async<T[]>[]): Async<T[]> {
-        return lift((ys: T[])=>[].concat(ys))(amap(xs));
+        return lift((ys: T[])=>[].concat(ys))(collect(xs));
     } 
 
     export function join(xs: Async<string[]>, separator: Async<string> = pure(",")): Async<string> {
@@ -679,7 +679,7 @@ module masync {
         return ()=>{
             var args = Array.prototype.slice.call(arguments);
             return (succ: (t: Z)=>void, fail: ()=>void)=>{
-                amap(args)(_args=>{  
+                collect(args)(_args=>{  
                     _args.push((err: Error, data: Z)=> err ? fail() : succ(data));    // lift a function and add the function as callback
                     f.apply(undefined, _args);
                 }, fail);
