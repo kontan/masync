@@ -51,10 +51,10 @@ var masync;
         return function (succ, fail) {
             var _f;
             var _x;
+            var count = 0;
             function fin() {
-                if (typeof _f !== "undefined" && typeof _x !== "undefined") {
+                if (++count === 2)
                     succ(_f(_x));
-                }
             }
             f(function (g) {
                 _f = g;
@@ -80,12 +80,9 @@ var masync;
 
     function lift(f) {
         return function () {
-            var args = Array.prototype.slice.call(arguments);
-            return function (succ, fail) {
-                collect(args)(function (_args) {
-                    return succ(f.apply(undefined, _args));
-                }, fail);
-            };
+            return fmap(function (xs) {
+                return f.apply(undefined, xs);
+            }, collect(Array.prototype.slice.call(arguments)));
         };
     }
     masync.lift = lift;
@@ -279,26 +276,47 @@ var masync;
 
     function when(x, ifthen, ifelse) {
         return function (succ, fail) {
-            x(function (result) {
-                if (result) {
-                    ifthen(succ, fail);
-                } else if (ifelse) {
-                    ifelse(succ, fail);
-                }
+            x(function (_x) {
+                _x ? ifthen(succ, fail) : ifelse ? ifelse(succ, fail) : succ(undefined);
             }, fail);
         };
     }
     masync.when = when;
 
-    function repeat(keys, f) {
-        keys = keys instanceof Array ? pure(keys) : keys;
+    function loop() {
+        var xs = [];
+        for (var _i = 0; _i < (arguments.length - 0); _i++) {
+            xs[_i] = arguments[_i + 0];
+        }
+        function _loop(x) {
+            return function (succ, fail) {
+                (function f() {
+                    x(function (_x) {
+                        return f();
+                    }, fail);
+                })();
+            };
+        }
+        return _loop(series.apply(undefined, xs));
+    }
+    masync.loop = loop;
+
+    function times(cnt, block) {
+        return count(cnt, function () {
+            return block;
+        });
+    }
+    masync.times = times;
+
+    function count(count, block) {
         return function (succ, fail) {
-            keys(function (ks) {
-                series.apply(undefined, ks.map(f))(succ, fail);
-            }, fail);
+            var i = 0;
+            (function f(v) {
+                i++ < count ? block(i)(f, fail) : succ(v);
+            })(undefined);
         };
     }
-    masync.repeat = repeat;
+    masync.count = count;
 
     function wait(seconds) {
         seconds = typeof (seconds) === "number" ? pure(seconds) : seconds;

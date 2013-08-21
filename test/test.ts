@@ -120,6 +120,22 @@ module masync.tests {
         
     }    
 
+    module flow {
+        masync.run(
+            masync.parallel(
+                masync.loop(
+                    masync.wait(3),
+                    masync.log("[test] loop")
+                ),
+                masync.times(10, masync.series(
+                    masync.wait(0.5),
+                    masync.log("[test] times")
+                ))
+            ),
+            masync.log("This message never be printed!")
+        );
+    }
+
     module error {
         test("error", ()=>{
             throws(()=>{ masync.run(masync.fail()) }, Error);

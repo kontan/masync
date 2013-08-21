@@ -51,10 +51,9 @@ module masync {
         return function(succ: (result: S)=>void, fail: ()=>void){
             var _f: (t: T)=>S;
             var _x: T;
+            var count = 0;
             function fin(){
-                if(typeof _f !== "undefined" && typeof _x !== "undefined"){
-                    succ(_f(_x));
-                }
+                if(++count === 2) succ(_f(_x));
             }
             f((g: (t: T)=>S)=>{ _f = g; fin(); }, fail);
             x((r: T        )=>{ _x = r; fin(); }, fail);
@@ -96,13 +95,8 @@ module masync {
     export function lift<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,    Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K, l: L, m: M, n: N, o: O, p: P, q: Q, r: R, s: S, t: T, u: U, v: V, w: W, x: X            )=>Return): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>                          )=>Async<Return>;
     export function lift<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,  Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K, l: L, m: M, n: N, o: O, p: P, q: Q, r: R, s: S, t: T, u: U, v: V, w: W, x: X, y: Y      )=>Return): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>, y: Async<Y>             )=>Async<Return>;
     export function lift<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,Return>(f: (a: A, b: B, c: C, d: D, e: E, f: F, g: G, h: H, i: I, j: J, k: K, l: L, m: M, n: N, o: O, p: P, q: Q, r: R, s: S, t: T, u: U, v: V, w: W, x: X, y: Y, z: Z)=>Return): (a: Async<A>, b: Async<B>, c: Async<C>, d: Async<D>, e: Async<E>, f: Async<F>, g: Async<G>, h: Async<H>, i: Async<I>, j: Async<J>, k: Async<K>, l: Async<L>, m: Async<M>, n: Async<N>, o: Async<O>, p: Async<P>, q: Async<Q>, r: Async<R>, s: Async<S>, t: Async<T>, u: Async<U>, v: Async<V>, w: Async<W>, x: Async<X>, y: Async<Y>, z: Async<Z>)=>Async<Return>;
-    export function lift<R>(f: Function): any {
-        return ()=>{
-            var args: Async<any>[] = Array.prototype.slice.call(arguments);
-            return (succ: (r: R)=>void, fail: ()=>void)=>{  
-                collect(args)(_args=>succ(f.apply(undefined, _args)), fail);
-            };
-        };
+    export function lift(f: Function): any {
+        return ()=>fmap(xs=>f.apply(undefined, xs), collect(Array.prototype.slice.call(arguments)));
     }
 
     export function liftAsync<A,                                                  Return>(f: (a: A                                                                                                                                                      )=>Async<Return>): (a: Async<A>                                                                                                                                                                                                                                                                                                                                     )=>Async<Return>;
@@ -348,27 +342,32 @@ module masync {
     }
 
     export function when<T>(x: Async<boolean>, ifthen: Async<T>, ifelse?: Async<T>): Async<T> {
-        return function(succ: (result: T)=>void, fail: ()=>void){
-            x(function(result: boolean){
-                if(result){
-                    ifthen(succ, fail);
-                }else if(ifelse){
-                    ifelse(succ, fail);
-                }
+        return (succ: (result: T)=>void, fail: ()=>void)=>{
+            x((_x: boolean)=>{
+                _x ? ifthen(succ, fail) : ifelse ? ifelse(succ, fail) : succ(undefined);
             }, fail);
         }
     }
 
-    export function repeat<I,T>(keys: Async<I[]>, f: (i: I)=>Async<T>): Async<T> ;
-    export function repeat<I,T>(keys: I[], f: (i: I)=>Async<T>): Async<T> ;
-    export function repeat<I,T>(keys: any, f: (i: I)=>Async<T>): Async<T> {
-        keys = keys instanceof Array ? pure(keys) : keys;
-        return function(succ: ()=>void, fail: ()=>void){
-            keys(function(ks: I[]){
-                series.apply(undefined, ks.map(f))(succ, fail);
-            }, fail);
-        };
+    export function loop(...xs: Async<any>[]): Async<void> {
+        function _loop(x: Async<any>): Async<void> {
+            return (succ: ()=>void, fail: ()=>void)=>{
+                (function f(){ x(_x=>f(), fail); })();
+            };
+        }
+        return _loop(series.apply(undefined, xs));
     }
+
+    export function times<T>(cnt: number, block: Async<T>): Async<T> {
+        return count(cnt, ()=>block);
+    }
+
+    export function count<T>(count: number, block: (index: number)=>Async<T>): Async<T> {
+        return (succ: (t: T)=>void, fail: ()=>void)=>{
+            var i: number = 0;
+            (function f(v: T){ i++ < count ? block(i)(f, fail) : succ(v); })(undefined);
+        };
+    }    
 
     /// Pauses the current context for a specified amount of time. 
     /// 指定した時間、現在のコンテキストの実行を中断します。
