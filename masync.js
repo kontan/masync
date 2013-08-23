@@ -223,7 +223,11 @@ var masync;
         var succeed = undefined;
         var listener = [];
         return function (succ, fail) {
-            if (typeof succeed === "undefined") {
+            if (arguments.length == 0) {
+                if (succeed != true)
+                    throw new Error("The cache object is not evaluated or failed.");
+                return value;
+            } else if (typeof succeed === "undefined") {
                 if (listener.length == 0) {
                     xs(function (v) {
                         value = v;
@@ -274,6 +278,23 @@ var masync;
     }
     masync.fastest = fastest;
 
+    function branch(main, sub) {
+        return function (succ, fail) {
+            var active = true;
+            function side() {
+                if (active) {
+                    sub(side, fail);
+                }
+            }
+            main(function (v) {
+                active = false;
+                succ(v);
+            }, fail);
+            side();
+        };
+    }
+    masync.branch = branch;
+
     function when(x, ifthen, ifelse) {
         return function (succ, fail) {
             x(function (_x) {
@@ -321,10 +342,8 @@ var masync;
     function wait(seconds) {
         seconds = typeof (seconds) === "number" ? pure(seconds) : seconds;
         return function (succ, fail) {
-            seconds(function (result) {
-                window.setTimeout(function () {
-                    succ();
-                }, 1000 * result);
+            seconds(function (_seconds) {
+                window.setTimeout(succ, 1000 * _seconds);
             }, fail);
         };
     }
@@ -572,6 +591,25 @@ var masync;
         };
     }
     masync.getImage = getImage;
+
+    // DOM integration //////////////////////////////////////////////////////////////////////////////
+    function waitForMouseDown(element) {
+        return function (succ, fail) {
+            var listener = function () {
+                element.removeEventListener("mousedown", listener);
+                succ();
+            };
+            element.addEventListener("mousedown", listener);
+        };
+    }
+    masync.waitForMouseDown = waitForMouseDown;
+
+    function setTextContent(element, content) {
+        return lift(function (_content) {
+            element.textContent = _content;
+        })(_pure_(content));
+    }
+    masync.setTextContent = setTextContent;
 
     // generators integration ///////////////////////////////////////////////////////////////////////////////
     function generate(generator, x) {

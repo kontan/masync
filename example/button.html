@@ -1,0 +1,29 @@
+<button id="message">Click me!</button>
+<button id="toggle"></button>
+
+<script type="text/javascript" src="../masync.js"></script>
+<script type="text/javascript">
+var message = document.getElementById("message");
+var toggle = document.getElementById("toggle");
+var counter = 0;
+var getLabelText = masync.inject(function(){ return "Counter: " + counter++; });
+masync.run(
+    masync.parallel(
+        masync.loop(
+            masync.waitForMouseDown(message),
+            masync.log("button hoge pressed!")
+        ),
+        masync.loop(
+            masync.branch(
+                masync.waitForMouseDown(toggle),
+                masync.series(
+                    masync.setTextContent(toggle, getLabelText),
+                    masync.wait(0.1)
+                )
+            ),
+            masync.waitForMouseDown(toggle)
+        )
+    )
+);
+</script>
+

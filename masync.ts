@@ -297,12 +297,19 @@ module masync {
 
     export var nop: Async<void> = pure(undefined);
 
-    export function cache<T>(xs: Async<T>): Async<T> {
+    export interface Cached<T> extends Async<T> {
+        (): T;
+    }
+
+    export function cache<T>(xs: Async<T>): Cached<T> {
         var value: T = undefined;
         var succeed: boolean = undefined;
         var listener: { succ: (t: T)=>void; fail: ()=>void; }[] = [];
-        return function(succ: (result: T)=>void, fail: ()=>void){
-            if(typeof succeed === "undefined"){
+        return <any> function(succ: (result: T)=>void, fail: ()=>void){
+            if(arguments.length == 0){
+                if(succeed != true) throw new Error("The cache object is not evaluated or failed.");
+                return value;
+            }else if(typeof succeed === "undefined"){
                 if(listener.length == 0){
                     xs(function(v: T){ 
                         value = v;
@@ -341,6 +348,19 @@ module masync {
         };
     }
 
+    export function branch<T>(main: Async<T>, sub: Async<any>): Async<T> {
+        return (succ: (result: T)=>void, fail: ()=>void)=>{
+            var active = true;
+            function side(){
+                if(active){
+                    sub(side, fail);
+                }
+            }
+            main((v: T)=>{ active = false; succ(v); }, fail);
+            side();
+        };
+    }    
+
     export function when<T>(x: Async<boolean>, ifthen: Async<T>, ifelse?: Async<T>): Async<T> {
         return (succ: (result: T)=>void, fail: ()=>void)=>{
             x((_x: boolean)=>{
@@ -376,10 +396,8 @@ module masync {
     export function wait(seconds: number       ): Async<void>;
     export function wait(seconds: any          ): Async<void> {
         seconds = typeof(seconds) === "number" ? pure(seconds) : seconds;
-        return function(succ: ()=>void, fail: ()=>void){
-            seconds(function(result: number){
-                window.setTimeout(function(){ succ(); }, 1000 * result);
-            }, fail);
+        return (succ: ()=>void, fail: ()=>void)=>{
+            seconds((_seconds: number)=>{ window.setTimeout(succ, 1000 * _seconds); }, fail);
         }
     }
 
@@ -572,6 +590,24 @@ module masync {
         }
     }
 
+    // DOM integration //////////////////////////////////////////////////////////////////////////////
+
+    export function waitForMouseDown(element: HTMLElement): Async<void> {
+        return (succ: ()=>void, fail: ()=>void)=>{
+            var listener = ()=>{ 
+                element.removeEventListener("mousedown", listener);
+                succ();
+            };
+            element.addEventListener("mousedown", listener);
+        };
+    }
+
+    export function setTextContent(element: HTMLElement, content: Async<string>): Async<void> ;
+    export function setTextContent(element: HTMLElement, content:       string ): Async<void> ;
+    export function setTextContent(element: HTMLElement, content:       any    ): Async<void> {
+        return lift((_content)=>{ element.textContent = _content; })(_pure_(content));
+    }
+
     // generators integration ///////////////////////////////////////////////////////////////////////////////
 
     export function generate<T>(generator: Generator, x: Async<T>): Yieldable<T> {
@@ -677,7 +713,7 @@ module masync {
             return wrap<string,ReadFileOptions,string>(fs.readFile.bind(fs))(_pure_(fileName), pure(options));
         }
     }
-  
+
 }
 
 

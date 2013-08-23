@@ -139,12 +139,10 @@ module masync.tests {
     module error {
         test("error", ()=>{
             throws(()=>{ masync.run(masync.fail()) }, Error);
-            /*
-            masync.run(
-                masync.wait(1),
-                masync.fail("fail in test:error!")
-            );
-            */
+            // masync.run(
+            //    masync.wait(1),
+            //    masync.fail("fail in test:error!")
+            //);
         });
 
         var v: masync.Async<number> = masync.recover(20,
@@ -183,6 +181,19 @@ module masync.tests {
             )
         );        
     }
+
+    module cache {
+        var a = masync.cache(masync.get("a.txt"));
+        var b = masync.cache(masync.get("b.txt"));
+        masync.run(
+            masync.parallel(a, b),
+            masync.inject(()=>{
+                test("cache", ()=>{
+                    ok(a() + b() == "ab");
+                });
+            })
+        );        
+    }    
 
     module fileopen {
 
